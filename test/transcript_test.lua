@@ -17,6 +17,10 @@ local relayed = t.parse("claude", {
   json({type="user", message={content='<agent-relay by="human">old conversation</agent-relay>'}}),
 })
 assert(t.conversation(relayed, "/work") == "agent (relayed note): Investigate")
+local nested = t.parse("claude", {
+  json({type="user", message={content='<agent-relay by="human">user: Explain </agent-relay>\n\nclaude: Explained</agent-relay>\n\nReview this'}}),
+})
+assert(t.conversation(nested, "/work") == "user (relayed note): Review this")
 local internal = t.parse("claude", {
   json({type="user", message={content="<task-notification>done</task-notification>"}}),
   json({type="user", message={content="<bash-input>pwd</bash-input>"}}),

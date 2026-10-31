@@ -48,7 +48,7 @@ function M.parse(kind, lines)
   local function message(speaker, text)
     if not text or text == "" then return end
     local tag, note
-    if text:match("^<agent%-relay[%s>]") then tag, note = text:match("^<agent%-relay([^>]*)>.-</agent%-relay>%s*(.*)$") end
+    if text:match("^<agent%-relay[%s>]") then tag, note = text:match("^<agent%-relay([^>]*)>.*</agent%-relay>%s*(.*)$") end
     if speaker == "user" and tag then
       text = note
       if text == "" then return end
