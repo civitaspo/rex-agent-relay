@@ -1,0 +1,39 @@
+package.path = "./?.lua;" .. package.path
+local t = require("transcript")
+local function json(value) return rex.json.encode(value) end
+local claude = {
+  json({type="user", cwd="/work", message={content="Question"}}),
+  json({type="assistant", message={content={{type="thinking", thinking="hidden"},{type="text", text="Answer"},{type="tool_use", name="Edit", input={file_path="/work/a"}},{type="tool_use",name="Write",input={file_path="/work/b"}}}}}),
+  json({type="user", message={content="Next"}}),
+  json({type="user", isSidechain=true, message={content="hidden"}}),
+  json({type="user", message={content='<agent-relay from="codex" by="human">\nsecret\n</agent-relay>\n\nDo this'}}),
+}
+local parsed = t.parse("claude", claude)
+assert(parsed.latest_cwd == "/work")
+assert(t.conversation(parsed, "/work") == "user: Question\n\nclaude: Answer\n\n[refs: edited a; wrote b]\n\nuser: Next\n\nuser (relayed note): Do this")
+assert(#parsed.files == 2)
+local relayed = t.parse("claude", {
+  json({type="user", message={content='<agent-relay by="auto">old conversation</agent-relay>\n\nInvestigate'}}),
+  json({type="user", message={content='<agent-relay by="human">old conversation</agent-relay>'}}),
+})
+assert(t.conversation(relayed, "/work") == "agent (relayed note): Investigate")
+local codex = t.parse("codex", {
+  json({type="turn_context", payload={cwd="/work"}}),
+  json({type="event_msg",payload={type="item_completed",item={type="UserMessage",content={{text="Hi"}}}}}),
+  json({type="event_msg",payload={type="item_completed",item={type="FileChange",changes={["/work/old"]={type="delete",move_path="/work/new"}}}}}),
+  json({type="event_msg",payload={type="item_completed",item={type="AgentMessage",content={{text="Done"}}}}}),
+})
+assert(t.conversation(codex, "/work") == "user: Hi\n\ncodex: Done\n\n[refs: moved old -> new]")
+local body = t.body("claude", "human", "/work", "user: Hi", "Do it")
+assert(body == '<agent-relay from="claude" by="human" cwd="/work">\nuser: Hi\n</agent-relay>\n\nDo it')
+assert(t.body("claude", "auto", "/work", "long", "note", "/outbox/x", "[refs: edited a]"):find("[refs: edited a]", 1, true))
+local path = os.tmpname()
+local f = assert(io.open(path, "wb")); f:write("one\ntwo\npartial"); f:close()
+local lines, pos = t.read(path, 0); assert(#lines == 2 and pos == 8)
+lines, pos = t.read(path, 0, 4); assert(#lines == 1 and pos == 4)
+assert(not pcall(t.read, path, 0, 3))
+os.remove(path)
+local missing, missing_pos = t.read(path, 0)
+assert(#missing == 0 and missing_pos == 0)
+assert(not pcall(t.read, path, 1))
+print("transcript tests passed")
