@@ -45,7 +45,6 @@ write(base .. "/pairs.json", "{}")
 local launched
 rex.session = {new_split=function(args)
   launched = args.layout.command or args.layout.options.command
-  register("block:new", "codex")
   return {block_ids={"block:new"}}
 end}
 rex.layout = {block=function(args) return args end}
@@ -56,6 +55,35 @@ local started, start_result = pcall(dofile, "relay.lua")
 os.exit, io.read = original_exit, original_read
 assert(not started and type(start_result) == "table" and start_result.exit == 0)
 assert(launched[1] == "codex" and launched[2] == "--no-daemon")
+local pairfile = assert(io.open(base .. "/pairs.json")); local saved_pairs = rex.json.decode(pairfile:read("*a")); pairfile:close()
+local cursorfile = assert(io.open(base .. "/cursors.json")); cursors = rex.json.decode(cursorfile:read("*a")); cursorfile:close()
+assert(saved_pairs[source] == "block:new" and cursors[log] == #first + #later)
+local original_call = rex.call
+rex.call = function(method, args)
+  if method == "session.list_blocks" and args.session_id == "s1" then
+    return {blocks={{block_id=source, placement="placed"}, {block_id="block:new", placement="placed"}}}
+  end
+  return original_call(method, args)
+end
+rex.args = {mode="deliver", source=source}
+local new_split = rex.session.new_split
+rex.session.new_split = function() error("must not start another agent") end
+os.exit = function(code) error({exit=code}) end
+io.read = function() return "Another note" end
+local pending_ok, pending_result = pcall(dofile, "relay.lua")
+os.exit, io.read, rex.call, rex.session.new_split = original_exit, original_read, original_call, new_split
+assert(not pending_ok and pending_result.exit == 1)
+os.exit = function(code) error({exit=code}) end
+io.read = function() return "Another note" end
+local retry_ok, retry_result = pcall(dofile, "relay.lua")
+os.exit, io.read = original_exit, original_read
+assert(not retry_ok and retry_result.exit == 0)
+rex.args = {mode="send", source="block:missing"}
+os.exit = function(code) error({exit=code}) end
+io.read = function() error({waiting=true}) end
+local ui_ok, ui_result = pcall(dofile, "relay.lua")
+os.exit, io.read = original_exit, original_read
+assert(not ui_ok and type(ui_result) == "table" and ui_result.waiting)
 local original_open = io.open
 io.open = function(path, mode)
   if path == base .. "/pairs.json" then return nil, "permission denied", 13 end

@@ -47,9 +47,10 @@ function M.parse(kind, lines)
   end
   local function message(speaker, text)
     if not text or text == "" then return end
-    if speaker == "user" and text:find("<agent%-relay[%s>]") then
-      local tag = text:match("<agent%-relay([^>]*)>") or ""
-      text = text:match("</agent%-relay>%s*(.*)") or ""
+    local tag, note
+    if text:match("^<agent%-relay[%s>]") then tag, note = text:match("^<agent%-relay([^>]*)>.-</agent%-relay>%s*(.*)$") end
+    if speaker == "user" and tag then
+      text = note
       if text == "" then return end
       speaker = tag:match('by="human"') and "user (relayed note)" or "agent (relayed note)"
     end
@@ -72,11 +73,15 @@ function M.parse(kind, lines)
       local content = row.message and row.message.content
       if row.type == "user" or row.type == "assistant" then
         local speaker = row.type == "user" and "user" or "claude"
+        local function claude_message(text)
+          if speaker == "user" and text and (text:match("^<command%-name>") or text:match("^<command%-message>") or text:match("^<local%-command%-") or text:match("^<system%-reminder>") or text:match("^<task%-notification>") or text:match("^<bash%-")) then return end
+          message(speaker, text)
+        end
         if type(content) == "string" then
-          if not content:match("^<command%-name>") and not content:match("^<local%-command%-") and not content:match("^<system%-reminder>") then message(speaker, content) end
+          claude_message(content)
         elseif type(content) == "table" then
           for _, part in ipairs(content) do
-            if part.type == "text" then message(speaker, part.text)
+            if part.type == "text" then claude_message(part.text)
             elseif part.type == "image" and speaker == "user" then message(speaker, "[image]")
             elseif part.type == "tool_use" and speaker == "claude" then
               local input = part.input or {}

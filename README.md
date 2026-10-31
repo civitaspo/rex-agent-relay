@@ -103,7 +103,7 @@ For long relays, the target receives the file path and a summary of changed file
 - The input window accepts a single-line note. `deliver` accepts multiple lines.
 - Do not run concurrent relays against the same state directory. Pair and relay point updates are not synchronized across processes.
 - Rex queues terminal writes. The agent may exit between a foreground check and receipt of the text. Check the target before retrying a failed relay because a failed submission may already have pasted text.
-- A newly started target must register and appear in the foreground within ten seconds. If it does not, the relay point is not advanced and the new pane remains open.
+- A new pane receives the relay at startup, so its relay point advances when Rex creates the pane. If the agent fails to start, inspect the pane and retry manually; a pane waiting for registration blocks further relays until it registers or is closed.
 
 ## Verification
 

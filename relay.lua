@@ -20,11 +20,16 @@ local function read_json(path, optional)
   if type(value) ~= "table" then error("invalid state " .. path .. ": " .. tostring(decode_err), 0) end
   return value
 end
+local function temporary(template)
+  local result, err = rex.exec({"mktemp", template})
+  if not result or not result.ok then error(err or result.stderr, 0) end
+  return assert(result.stdout:match("^[^\n]+"))
+end
 local function save_json(path, value)
   mkdir(state)
   local encoded, encode_err = rex.json.encode(value)
   if not encoded then error(encode_err, 0) end
-  local name = path .. "." .. tostring(os.time()) .. "." .. tostring(math.random(1000000000)) .. ".tmp"
+  local name = temporary(path .. ".XXXXXXXX")
   local out = assert(io.open(name, "wb")); assert(out:write(encoded)); assert(out:close())
   local ok, rename_err = os.rename(name, path)
   if not ok then os.remove(name); error(rename_err, 0) end
@@ -92,6 +97,7 @@ local function collect(limit)
   local pairs = read_json(state .. "/pairs.json", true)
   local target_id = pairs[source]
   local target = target_id and agent(target_id)
+  local pending = target_id and all[target_id] and not target
   if not target or not foreground(target_id, all[target_id], target.agent) then target, target_id = nil, nil end
   local cursors = read_json(state .. "/cursors.json", true)
   local offset = cursors[src.hook.transcript_path] or 0
@@ -105,7 +111,7 @@ local function collect(limit)
   end
   cwd = cwd or src.hook.cwd
   if not cwd then error("source working directory is unavailable", 0) end
-  return {src=src, target=target, target_id=target_id, panes=all, cursors=cursors, parsed=parsed, cwd=cwd, ending=ending}
+  return {src=src, target=target, target_id=target_id, pending=pending, panes=all, cursors=cursors, parsed=parsed, cwd=cwd, ending=ending}
 end
 local function choose_pair()
   if not agent(source) then error("source agent is not registered", 0) end
@@ -130,7 +136,7 @@ local function deliver(plan, note, kind, by)
   if #body > max then
     local outbox = os.getenv("REX_AGENT_RELAY_OUTBOX_DIR") or state .. "/outbox"
     mkdir(outbox)
-    local path = outbox .. "/" .. os.date("%Y%m%d-%H%M%S") .. "-" .. source:sub(-6) .. "-" .. tostring(math.random(1000000000)) .. ".md"
+    local path = temporary(outbox .. "/" .. os.date("%Y%m%d-%H%M%S") .. "-" .. source:sub(-6) .. "-XXXXXXXX")
     local f, err = io.open(path, "wb"); if not f then error(err, 0) end
     assert(f:write(body)); assert(f:close())
     body = transcript.body(plan.src.agent, by, plan.cwd, conversation, note, path, transcript.refs(plan.parsed.files, plan.cwd))
@@ -154,14 +160,6 @@ local function deliver(plan, note, kind, by)
       layout=rex.layout.block{flavor="com.superlogical.terminal.shell", options={cwd=plan.cwd, command=command}}}
     if not split then error(tostring(err), 0) end
     local new_id = assert(split.block_ids[1])
-    local pane = {session_id=plan.panes[source].session_id}
-    local ready = false
-    for _ = 1, 50 do
-      rex.sleep(0.2)
-      local registered = agent(new_id)
-      if registered and registered.agent == kind and foreground(new_id, pane, kind) then ready = true; break end
-    end
-    if not ready then error("new agent did not register and reach the foreground; relay point was not advanced", 0) end
     pair_save(source, new_id)
   end
   plan.cursors[plan.src.hook.transcript_path] = plan.ending
@@ -187,6 +185,7 @@ local function run()
     if text ~= "" then print("\n" .. text) end
     return #plan.parsed.messages == 0 and #plan.parsed.files == 0 and 2 or 0
   end
+  if plan.pending then error("paired pane has not registered; wait for the agent or close the pane before retrying", 0) end
   local note, kind, by = "", rex.args.kind, rex.args.by or "auto"
   if by ~= "human" and by ~= "auto" then error("by must be human or auto", 0) end
   if mode == "send" then
@@ -210,6 +209,10 @@ local function run()
   return deliver(plan, note, kind, by)
 end
 local ok, result = pcall(run)
-if not ok then io.stderr:write("agent-relay: " .. tostring(result) .. "\n"); os.exit(1) end
+if not ok then
+  io.stderr:write("agent-relay: " .. tostring(result) .. "\n")
+  if mode == "send" or mode == "pair" then io.write("Press Enter to close. "); io.flush(); io.read("*l") end
+  os.exit(1)
+end
 if result == 2 and mode == "send" then print("nothing to relay") end
 os.exit(result)

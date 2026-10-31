@@ -17,6 +17,14 @@ local relayed = t.parse("claude", {
   json({type="user", message={content='<agent-relay by="human">old conversation</agent-relay>'}}),
 })
 assert(t.conversation(relayed, "/work") == "agent (relayed note): Investigate")
+local internal = t.parse("claude", {
+  json({type="user", message={content="<task-notification>done</task-notification>"}}),
+  json({type="user", message={content="<bash-input>pwd</bash-input>"}}),
+  json({type="user", message={content={{type="text", text="<command-message>test</command-message>"}}}}),
+  json({type="user", message={content="Describe the <agent-relay> tag."}}),
+  json({type="user", message={content="<agent-relay> without a closing tag"}}),
+})
+assert(t.conversation(internal, "/work") == "user: Describe the <agent-relay> tag.\n<agent-relay> without a closing tag")
 local codex = t.parse("codex", {
   json({type="turn_context", payload={cwd="/work"}}),
   json({type="event_msg",payload={type="item_completed",item={type="UserMessage",content={{text="Hi"}}}}}),
