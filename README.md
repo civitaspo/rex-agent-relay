@@ -45,7 +45,7 @@ Focus an agent pane and press `cmd+shift+r`, or run **Agent Relay: Send** from t
 
 Use **Agent Relay: Change Pair** to pair the source with an existing agent pane, including one in another Rex session. Each pane belongs to one pair. A new pair replaces each pane's old pair.
 
-The target receives the conversation in an `<agent-relay>` tag, followed by the note. The `by` attribute identifies who chose the relay. Changed files appear at the end of each turn as `[refs: edited path; wrote path]`. A relayed conversation is not sent back to its source, though its note remains visible as a relayed note.
+The target receives the conversation in an `<agent-relay>` tag, followed by the note. The `by` attribute identifies who chose the relay, and `bytes` records the length of the quoted content so that closing tags in either part remain readable. Changed files appear at the end of each turn as `[refs: edited path; wrote path]`. A relayed conversation is not sent back to its source, though its note remains visible as a relayed note.
 
 If the target is no longer running its agent, the relay does not write to its shell. A new target starts in the source's latest working directory. Codex targets start with `--no-daemon` so their SessionStart hook can register the pane. Both agents can edit the same files.
 
@@ -104,7 +104,7 @@ For long relays, the target receives the file path and a summary of changed file
 - Do not run concurrent relays against the same state directory. Pair and relay point updates are not synchronized across processes.
 - Rex queues terminal writes. The agent may exit between a foreground check and receipt of the text. Check the target before retrying a failed relay because a failed submission may already have pasted text.
 - A new pane receives the relay at startup, so its relay point advances when Rex creates the pane. If the agent fails to start, close the pane and stop other relays. Back up `<state directory>/cursors.json`, find the source's `transcript_path` in `<state directory>/agents/<source block ID without block:>.json`, and remove only that path's entry from `cursors.json`. Retry the relay; this resends the entire transcript, including any previously relayed conversation. A pane waiting for registration blocks further relays until it registers or is closed.
-- When folding a relay back into a conversation, the last `</agent-relay>` marks the end of its quoted context. Avoid that literal closing tag in a note.
+- Older relays without a `bytes` attribute use the last `</agent-relay>` as the boundary, so a closing tag in an older note may be misidentified.
 
 ## Verification
 

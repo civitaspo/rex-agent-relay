@@ -48,7 +48,21 @@ function M.parse(kind, lines)
   local function message(speaker, text)
     if not text or text == "" then return end
     local tag, note
-    if text:match("^<agent%-relay[%s>]") then tag, note = text:match("^<agent%-relay([^>]*)>.*</agent%-relay>%s*(.*)$") end
+    if text:match("^<agent%-relay[%s>]") then
+      local header, rest = text:match("^<agent%-relay([^>]*)>\n(.*)$")
+      local bytes = header and header:match('%sbytes="(%d+)"')
+      if bytes then
+        local ending = "\n</agent-relay>"
+        local offset = tonumber(bytes) + 1
+        if rest:sub(offset, offset + #ending - 1) == ending then
+          local after = rest:sub(offset + #ending)
+          if after == "" then tag, note = header, ""
+          elseif after:sub(1, 2) == "\n\n" then tag, note = header, after:sub(3) end
+        end
+      else
+        tag, note = text:match("^<agent%-relay([^>]*)>.*</agent%-relay>%s*(.*)$")
+      end
+    end
     if speaker == "user" and tag then
       text = note
       if text == "" then return end
@@ -148,6 +162,7 @@ function M.body(kind, by, cwd, conversation, note, file, refs)
     content = "The conversation is too long to paste. Read the file above before following the note."
     if refs ~= "" then content = content .. "\n\n" .. refs end
   end
+  tag = tag .. ' bytes="' .. #content .. '"'
   local body = tag .. ">\n" .. content .. "\n</agent-relay>"
   if note ~= "" then body = body .. "\n\n" .. note end
   return body
