@@ -1,3 +1,4 @@
+--# selene: allow(incorrect_standard_library_use)
 local base = assert(os.getenv("XDG_STATE_HOME")) .. "/rex-agent-relay"
 assert(rex.exec({ "mkdir", "-p", base .. "/agents" }).ok)
 local function write(path, data)
@@ -138,9 +139,9 @@ local function rejected_source(process, expected)
   local original_stderr, message = io.stderr, {}
   io.stderr = { write = function(_, text) message[#message + 1] = text end }
   os.exit = function(code) error({ exit = code }) end
-  local valid, result = pcall(dofile, "rex-agent-relay/relay.lua")
+  local valid, rejection = pcall(dofile, "rex-agent-relay/relay.lua")
   os.exit, rex.call, io.stderr = original_exit, original_call, original_stderr
-  assert(not valid and type(result) == "table" and result.exit == 1)
+  assert(not valid and type(rejection) == "table" and rejection.exit == 1)
   local output = table.concat(message)
   assert(output:find(expected, 1, true), "expected " .. expected .. "; got " .. output)
 end

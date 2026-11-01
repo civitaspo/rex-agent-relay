@@ -1,3 +1,4 @@
+--# selene: allow(incorrect_standard_library_use)
 local temp_index = 0
 local json, exec
 if rex and rex.json then

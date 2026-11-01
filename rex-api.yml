@@ -1,0 +1,17 @@
+---
+base: lua51
+globals:
+  rex:
+    any: true
+  assert:
+    args:
+      - type: any
+      - required: false
+        type: string
+  error:
+    args:
+      - type: any
+      - required: false
+        type: number
+  io.stderr:
+    any: true

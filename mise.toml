@@ -1,5 +1,7 @@
 [tools]
 "aqua:ast-grep/ast-grep" = "0.51.0"
+"aqua:JohnnyMorganz/StyLua" = "2.6.0"
+"aqua:Kampfkarren/selene" = "0.32.0"
 "aqua:jdx/jactionlint" = "2.4.0"
 "aqua:koalaman/shellcheck" = "0.11.0"
 "aqua:suzuki-shunsuke/disable-checkout-persist-credentials" = "1.0.2"
@@ -14,6 +16,8 @@ run = [
   "ghalint run",
   "gh-actions-lock --verify-local",
   "git ls-files -z '*.sh' 'mise-tasks/*' | xargs -0 -n 1 sh -c 'for file do shellcheck \"$file\"; done' sh",
+  "git ls-files -z '*.lua' | xargs -0 stylua --check",
+  "git ls-files -z '*.lua' | xargs -0 selene",
   "ast-grep scan",
   "ast-grep test --skip-snapshot-tests",
 ]
@@ -25,4 +29,9 @@ run = "gh-actions-lock --no-interactive --no-narrow --no-migrate-local-actions"
 run = "gh-actions-lock --verify"
 
 [tasks.fix]
-run = ["pinact run --verify-comment", "disable-checkout-persist-credentials", "mise run actions-lock"]
+run = [
+  "pinact run --verify-comment",
+  "disable-checkout-persist-credentials",
+  "mise run actions-lock",
+  "git ls-files -z '*.lua' | xargs -0 stylua",
+]
