@@ -7,3 +7,7 @@ jobs:
     uses: ./.github/workflows/wc-checks.yml
     permissions:
       contents: read
+  tests:
+    uses: ./.github/workflows/wc-tests.yml
+    permissions:
+      contents: read
