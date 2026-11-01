@@ -5,19 +5,27 @@
 "aqua:suzuki-shunsuke/disable-checkout-persist-credentials" = "1.0.2"
 "aqua:suzuki-shunsuke/ghalint" = "1.6.0"
 "aqua:suzuki-shunsuke/pinact" = "5.0.2"
+"github:github/gh-actions-lock" = { version = "v0.4.0", bin = "gh-actions-lock" }
 
 [tasks.lint]
 run = [
   "jactionlint --shellcheck=shellcheck",
-  "pinact run --check",
+  "pinact run --check --verify-comment",
   "ghalint run",
+  "gh-actions-lock --verify-local",
   "git ls-files -z '*.sh' | xargs -0 -n 1 sh -c 'for file do shellcheck \"$file\"; done' sh",
   "ast-grep scan",
   "ast-grep test --skip-snapshot-tests",
 ]
 
+[tasks.actions-lock]
+run = "gh-actions-lock --no-interactive --no-narrow --no-migrate-local-actions"
+
+[tasks.actions-lock-verify]
+run = "gh-actions-lock --verify"
+
 [tasks.fix]
-run = ["pinact run", "disable-checkout-persist-credentials"]
+run = ["pinact run --verify-comment", "disable-checkout-persist-credentials", "mise run actions-lock"]
 
 [tasks.test]
 run = "test -s README.md && test -s LICENSE"

@@ -7,3 +7,4 @@
 - Add project checks to CI when the project gains tooling or source code.
 - Install tools with `mise install`; run `mise run lint` and `mise run test` before submitting changes.
 - Run `mise run fix` to apply supported automatic fixes.
+- Before changing GitHub Actions, read [docs/github-actions.md](docs/github-actions.md).
