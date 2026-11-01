@@ -1,0 +1,13 @@
+id: lua-dynamic-code
+language: Lua
+severity: error
+message: Avoid executing dynamically loaded Lua code; use a data parser.
+rule:
+  any:
+    - pattern: load($CODE)
+    - pattern: load($CODE, $$$OPTIONS)
+    - pattern: loadstring($CODE)
+    - pattern: loadstring($CODE, $$$OPTIONS)
+    - pattern: loadfile($PATH)
+    - pattern: loadfile($PATH, $$$OPTIONS)
+    - pattern: dofile($PATH)
