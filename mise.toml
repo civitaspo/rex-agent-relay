@@ -1,5 +1,4 @@
 [tools]
-lua = "5.1.5"
 "aqua:ast-grep/ast-grep" = "0.51.0"
 "aqua:jdx/jactionlint" = "2.4.0"
 "aqua:koalaman/shellcheck" = "0.11.0"
@@ -29,6 +28,7 @@ run = "gh-actions-lock --verify"
 run = ["pinact run --verify-comment", "disable-checkout-persist-credentials", "mise run actions-lock"]
 
 [tasks.test]
+tools = { lua = "5.1.5" }
 run = '''
 set -eu
 rocks="$MISE_PROJECT_ROOT/.mise/lua"
