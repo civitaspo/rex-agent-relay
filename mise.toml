@@ -1,0 +1,24 @@
+[tools]
+"aqua:astral-sh/uv" = "0.13.6"
+"aqua:jdx/jactionlint" = "2.4.0"
+"aqua:koalaman/shellcheck" = "0.11.0"
+"aqua:suzuki-shunsuke/disable-checkout-persist-credentials" = "1.0.2"
+"aqua:suzuki-shunsuke/ghalint" = "1.5.7"
+"aqua:suzuki-shunsuke/pinact" = "5.0.2"
+python = "3.13.12"
+"pipx:semgrep" = "1.183.0"
+
+[tasks.lint]
+run = [
+  "jactionlint --shellcheck=shellcheck",
+  "pinact run --check",
+  "ghalint run",
+  "git ls-files -z '*.sh' | xargs -0 -n 1 sh -c 'for file do shellcheck \"$file\"; done' sh",
+  "semgrep scan --config p/default --error",
+]
+
+[tasks.fix]
+run = ["pinact run", "disable-checkout-persist-credentials"]
+
+[tasks.test]
+run = "test -s README.md && test -s LICENSE"
