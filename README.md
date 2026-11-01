@@ -1,6 +1,17 @@
 # rex-agent-relay
 
-Relay the new part of a Claude Code or Codex conversation to another agent in Rex, together with changed file paths and a note. Both agents work in the same directory. See the [glossary](docs/GLOSSARY.md) for the terms used here.
+**Hand off the conversation, not the copy-paste.**
+
+Relay the new part of a Claude Code or Codex conversation to another agent in Rex, together with the files it changed and a note. Both agents work in the same directory, so the reviewer picks up exactly where the builder left off.
+
+https://github.com/user-attachments/assets/6d2269f3-20fd-44f0-8f28-be5cbed23912
+
+- **One shortcut.** Press `cmd+shift+r` in an agent pane and the conversation moves to its paired agent.
+- **Only what's new.** Each relay starts where the last one ended, so nothing is sent twice.
+- **Changes travel along.** Edited and written paths are listed at the end of every turn.
+- **Any pair, one directory.** Claude Code and Codex relay to each other, even across Rex sessions.
+
+See the [glossary](docs/GLOSSARY.md) for the terms used here.
 
 ## Requirements
 
