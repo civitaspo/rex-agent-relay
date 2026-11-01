@@ -1,0 +1,4 @@
+std = "rex-api"
+
+[rules]
+multiple_statements = "allow"
