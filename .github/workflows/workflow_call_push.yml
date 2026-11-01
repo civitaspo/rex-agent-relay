@@ -1,0 +1,9 @@
+name: Push checks (workflow_call)
+on:
+  workflow_call:
+permissions: {}
+jobs:
+  checks:
+    uses: ./.github/workflows/wc-checks.yml
+    permissions:
+      contents: read
