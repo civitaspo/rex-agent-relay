@@ -20,13 +20,20 @@ A relay must know which conversation the agent in the source pane is having. Rex
 2. **The registration file is the contract, not the hook.** The relay does not care what writes the file. Claude Code and Codex use the shell hook in this repository. A later agent kind can write the same file from its own extension mechanism.
 3. **A target needs no registration.** A target only has to be running a supported agent. The relay decides whether a pane is a target, and which agent kind it runs, from the pane's foreground process name. Each agent kind lists the process names it can appear as.
 4. **Codex sources run with `--no-daemon`.** The shared Codex daemon runs hooks without the pane's environment, so `REX_BLOCK` is missing and the hook cannot register the pane. A Codex pane started through the daemon can still be a target.
-5. **A registration must belong to the agent now running in the pane.** The relay accepts a registration only when it names the same agent kind as the pane's foreground process and was written after that process started. Otherwise it stops with an error. This keeps a registration left behind by an earlier agent in the same pane from relaying an old conversation.
+5. **A registration must belong to the agent now running in the pane.** The hook records the agent's process ID, which is `$PPID` in the hook command. The relay accepts a registration only when that process ID and agent kind match the pane's foreground process. Otherwise it stops with an error. This keeps a registration left behind by an earlier agent in the same pane from relaying an old conversation.
 
 ## Considered options
 
 ### SessionStart hooks (chosen)
 
-Claude Code and Codex both document SessionStart hooks. The hook receives `transcript_path` on stdin and inherits `REX_BLOCK` from the pane, which together give an exact mapping from pane to conversation. Claude Code runs SessionStart again after `/clear`, so the registration follows the new conversation.
+Claude Code and Codex both document SessionStart hooks. The hook receives `transcript_path` on stdin and inherits `REX_BLOCK` from the pane, which together give an exact mapping from pane to conversation.
+
+We verified the hooks in Rex with Claude Code 2.1.305 and Codex 0.163.0 (daemon 0.166.0):
+
+- Claude Code runs SessionStart with `source` set to `clear` after `/clear`, with the new `transcript_path`, so the registration follows the new conversation.
+- In Claude Code and in Codex started with `--no-daemon`, the hook sees `REX_BLOCK` and `REX_BIN_DIR`, and `$PPID` in the hook command equals the pane's foreground process ID.
+- In Codex started through the daemon, the daemon process runs the hook. `REX_BLOCK` and `REX_BIN_DIR` are unset, so the hook cannot tell which pane started the conversation.
+- Without the check in decision 5, a stale registration is relayed without an error. In the first implementation, a pane that had run Claude Code and then ran Codex relayed the old Claude Code conversation.
 
 ### Discovering conversations without hooks (rejected)
 
