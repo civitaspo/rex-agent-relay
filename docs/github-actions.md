@@ -1,8 +1,7 @@
 # GitHub Actions
 
-Follow this structure when changing repository-owned workflows. It adapts
-[herdr-linear-agent's workflows](https://github.com/civitaspo/herdr-linear-agent/tree/e8fb05ca1962f68b30154e7b74b22e2d3faab7a0/.github/workflows)
-and [GitHub Actions Best Practice 2025](https://suzuki-shunsuke.github.io/slides/github-actions-best-practice-2025).
+Follow this structure when changing repository-owned workflows. It follows
+[GitHub Actions Best Practice 2025](https://suzuki-shunsuke.github.io/slides/github-actions-best-practice-2025).
 The `csm-ci-*.yml` workflows are distributed by csm-ci and are not maintained
 here. The Securefix caller is part of this repository's PR workflow.
 
