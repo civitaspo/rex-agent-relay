@@ -11,7 +11,9 @@ local function compact(value)
     end
     return result
   end
-  for key, item in pairs(value) do value[key] = compact(item) end
+  for key, item in pairs(value) do
+    value[key] = compact(item)
+  end
   return value
 end
 
