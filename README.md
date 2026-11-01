@@ -120,4 +120,4 @@ A future caller can trigger on an agent turn ending, run `peek`, ask a judge age
 
 ## Acknowledgements
 
-This project is inspired by the relay in [Kanary](https://kanary.to/agents), whose relay format with speaker labels and `[refs: …]` lines it follows, and by [Agent Relay](https://agentrelay.com), which lets coding agents message each other directly.
+This project is inspired by the relay in [Kanary](https://kanary.to/agents) and by [Agent Relay](https://agentrelay.com).
