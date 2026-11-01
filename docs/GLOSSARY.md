@@ -16,6 +16,8 @@
 
 **Conversation**: A continuous exchange with an agent. Starting or clearing an agent begins a new conversation.
 
+**Registration**: A record, written when an agent starts a conversation in a pane, that ties the pane to that conversation. A source needs one. A target does not.
+
 ## Relay
 
 **Relay**: The part of the source conversation after the last relay point, its changed files, and a note, sent together to the target.

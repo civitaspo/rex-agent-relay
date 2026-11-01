@@ -35,7 +35,7 @@ Relay the new part of a Claude Code or Codex conversation to another agent in Re
 
    Place each command in a `hooks.SessionStart` entry's `hooks` array. Approve the Codex hook with `/hooks` if required. Restart the agent in Rex so that the hook registers its conversation. Codex runs SessionStart when its first prompt starts a conversation. Outside Rex, the hook does nothing.
 
-The hook stores the agent's SessionStart data under `${XDG_STATE_HOME:-~/.local/state}/rex-agent-relay/agents`. Relay points and pairs are stored in the same state directory. Configure these files and the outbox with permissions appropriate for conversation data.
+[ADR 0001](docs/adr/0001-register-sources-with-sessionstart-hooks.md) explains why sources register through hooks. The hook stores the agent's SessionStart data under `${XDG_STATE_HOME:-~/.local/state}/rex-agent-relay/agents`. Relay points and pairs are stored in the same state directory. Configure these files and the outbox with permissions appropriate for conversation data.
 
 To update, pull the repository and run `rex config reload`. You can manage the clone, Rex configuration, and hooks with home-manager.
 
