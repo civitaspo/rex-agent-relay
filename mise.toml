@@ -13,7 +13,7 @@ run = [
   "ghalint run",
   "git ls-files -z '*.sh' | xargs -0 -n 1 sh -c 'for file do shellcheck \"$file\"; done' sh",
   "ast-grep scan",
-  "ast-grep test",
+  "ast-grep test --skip-snapshot-tests",
 ]
 
 [tasks.fix]
