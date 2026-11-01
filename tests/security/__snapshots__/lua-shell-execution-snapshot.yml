@@ -1,0 +1,20 @@
+id: lua-shell-execution
+snapshots:
+  io.popen(input):
+    labels:
+    - source: io.popen(input)
+      style: primary
+      start: 0
+      end: 15
+  "io.popen(input, \"r\")":
+    labels:
+    - source: io.popen(input, "r")
+      style: primary
+      start: 0
+      end: 20
+  os.execute(input):
+    labels:
+    - source: os.execute(input)
+      style: primary
+      start: 0
+      end: 17
