@@ -14,7 +14,7 @@ Relay the new part of a Claude Code or Codex conversation to another agent in Re
 2. Add the repository directory to `package.path` in `~/.config/rex/init.lua` and register the actions. Replace the path if your clone is elsewhere.
 
    ```lua
-   package.path = os.getenv("HOME") .. "/src/github.com/civitaspo/rex-agent-relay/?.lua;" .. package.path
+   package.path = os.getenv("HOME") .. "/src/github.com/civitaspo/rex-agent-relay/?/init.lua;" .. package.path
    require("rex-agent-relay").setup{ key = "cmd+shift+r" }
    ```
 
@@ -24,13 +24,13 @@ Relay the new part of a Claude Code or Codex conversation to another agent in Re
    Claude Code:
 
    ```json
-   {"type":"command","timeout":5,"command":"$HOME/src/github.com/civitaspo/rex-agent-relay/session-start.sh claude"}
+   {"type":"command","timeout":5,"command":"[ -n \"$REX_BIN_DIR\" ] || exit 0; \"$REX_BIN_DIR/rex\" do \"$HOME/src/github.com/civitaspo/rex-agent-relay/hooks/session-start.lua\" agent=claude pid=$PPID"}
    ```
 
    Codex:
 
    ```json
-   {"type":"command","timeout":5,"command":"$HOME/src/github.com/civitaspo/rex-agent-relay/session-start.sh codex"}
+   {"type":"command","timeout":5,"command":"[ -n \"$REX_BIN_DIR\" ] || exit 0; \"$REX_BIN_DIR/rex\" do \"$HOME/src/github.com/civitaspo/rex-agent-relay/hooks/session-start.lua\" agent=codex pid=$PPID"}
    ```
 
    Place each command in a `hooks.SessionStart` entry's `hooks` array. Approve the Codex hook with `/hooks` if required. Restart the agent in Rex so that the hook registers its conversation. Codex runs SessionStart when its first prompt starts a conversation. Outside Rex, the hook does nothing.
@@ -47,14 +47,14 @@ Use **Agent Relay: Change Pair** to pair the source with an existing agent pane,
 
 The target receives the conversation in an `<agent-relay>` tag, followed by the note. The `by` attribute identifies who chose the relay, and `bytes` records the length of the quoted content so that closing tags in either part remain readable. Changed files appear at the end of each turn as `[refs: edited path; wrote path]`. A relayed conversation is not sent back to its source, though its note remains visible as a relayed note.
 
-If the target is no longer running its agent, the relay does not write to its shell. A new target starts in the source's latest working directory. Codex targets start with `--no-daemon` so their SessionStart hook can register the pane. Both agents can edit the same files.
+Targets are identified by their foreground process and do not need a SessionStart registration. This includes Codex started with its shared daemon. If a paired pane is still open but is not running a supported agent, restart its agent or close the pane before retrying. A new target starts in the source's latest working directory. Codex targets start with `--no-daemon` so they can also be used as sources. Both agents can edit the same files.
 
 ## Peek and deliver
 
 `peek` prints the next conversation delta without changing the relay point or pair:
 
 ```sh
-rex do /path/to/rex-agent-relay/relay.lua mode=peek source=block:...
+rex do /path/to/rex-agent-relay/rex-agent-relay/relay.lua mode=peek source=block:...
 ```
 
 ```text
@@ -76,7 +76,7 @@ claude: I compared them.
 
 ```sh
 printf '%s\n' 'Review the design and list the risks.' |
-  rex do /path/to/rex-agent-relay/relay.lua mode=deliver source=block:... until=123456 kind=codex by=auto
+  rex do /path/to/rex-agent-relay/rex-agent-relay/relay.lua mode=deliver source=block:... until=123456 kind=codex by=auto
 ```
 
 `source` is required. `until` is optional. Pass the value from `peek` to exclude later transcript entries. `kind` selects the agent to start if no pair exists. It defaults to the other agent kind. `by` is `auto` by default and can be `human` or `auto`. To send without a note, redirect stdin from `/dev/null`.
@@ -103,12 +103,12 @@ For long relays, the target receives the file path and a summary of changed file
 - The input window accepts a single-line note. `deliver` accepts multiple lines.
 - Do not run concurrent relays against the same state directory. Pair and relay point updates are not synchronized across processes.
 - Rex queues terminal writes. The agent may exit between a foreground check and receipt of the text. Check the target before retrying a failed relay because a failed submission may already have pasted text.
-- A new pane receives the relay at startup, so its relay point advances when Rex creates the pane. If the agent fails to start, close the pane and stop other relays. Back up `<state directory>/cursors.json`, find the source's `transcript_path` in `<state directory>/agents/<source block ID without block:>.json`, and remove only that path's entry from `cursors.json`. Retry the relay; this resends the entire transcript, including any previously relayed conversation. A pane waiting for registration blocks further relays until it registers or is closed.
+- A new pane receives the relay at startup, so its relay point advances when Rex creates the pane. If the agent fails to start, close the pane and stop other relays. Back up `<state directory>/cursors.json`, find the source's `transcript_path` in `<state directory>/agents/<source block ID without block:>.json`, and remove only that path's entry from `cursors.json`. Retry the relay; this resends the entire transcript, including any previously relayed conversation. An open paired pane with no supported foreground agent blocks further relays until its agent starts or the pane is closed.
 - Older relays without a `bytes` attribute use the last `</agent-relay>` as the boundary, so a closing tag in an older note may be misidentified.
 
 ## Verification
 
-The transcript and hook checks run in CI. With Rex installed, run `rex do test/transcript_test.lua` and `sh test/hook_test.sh` from the repository root.
+The transcript and hook checks run in CI. With Rex installed, run `rex do test/transcript_test.lua`, `XDG_STATE_HOME=$(mktemp -d) rex do test/hook_test.lua`, and `REX_BIN_DIR=/path/to/rex/bin sh test/hook_rex_test.sh` from the repository root.
 
 Verified locally with Rex Beta: piped stdin and exit code 2, `peek`, cross-session pairing with fzf, floating-layer note input, and bracketed-paste delivery to Claude Code and Codex. Claude Code 2.1.305 and Codex 0.163.0 SessionStart hooks and new target startup were tested in isolated workspaces. Codex must use `--no-daemon`: the shared daemon does not pass the pane environment to its hooks.
 

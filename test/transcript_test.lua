@@ -1,4 +1,4 @@
-package.path = "./?.lua;" .. package.path
+package.path = "./rex-agent-relay/?.lua;" .. package.path
 local t = require("transcript")
 local function json(value) return rex.json.encode(value) end
 local claude = {

@@ -1,7 +1,10 @@
 local dir = debug.getinfo(1, "S").source:match("^@?(.*)/[^/]*$") or "."
 package.path = dir .. "/?.lua;" .. package.path
 local transcript = require("transcript")
-local kinds = { codex = true, claude = true }
+local kinds = {
+  claude = {process={"claude", "claude.js"}, start={"claude"}},
+  codex = {process={"codex", "codex.js"}, start={"codex", "--no-daemon"}},
+}
 local state = (os.getenv("XDG_STATE_HOME") or (assert(os.getenv("HOME")) .. "/.local/state")) .. "/rex-agent-relay"
 local source, mode = rex.args.source, rex.args.mode or "send"
 
@@ -40,7 +43,7 @@ local function agent(id)
   if not f then if missing(err, code) then return nil end; error(err, 0) end
   f:close()
   local value = read_json(state .. "/agents/" .. id:sub(7) .. ".json")
-  if value.block_id ~= id or not kinds[value.agent] or type(value.hook) ~= "table" then error("invalid agent registration: " .. id, 0) end
+  if value.block_id ~= id or not kinds[value.agent] or type(value.pid) ~= "number" or type(value.transcript_path) ~= "string" then error("invalid agent registration: " .. id, 0) end
   return value
 end
 local function call(method, args)
@@ -61,14 +64,28 @@ local function panes()
   end
   return found
 end
-local function foreground(id, pane, kind)
-  if not pane then return false end
+local function running(id, pane)
+  if not pane then return nil end
   local result = rex.call("com.superlogical.terminal.process", {session_id=pane.session_id, block_id=id, args={}})
   local process = result and result.foreground
-  if not process then return false end
+  if not process then return nil end
   local name = process.script or process.argv0 or process.name or ""
   name = name:match("([^/]+)$") or name
-  return name == kind or name == kind .. ".js"
+  for kind, spec in pairs(kinds) do
+    for _, candidate in ipairs(spec.process) do
+      if name == candidate then return {agent=kind, pid=process.pid, cwd=process.cwd} end
+    end
+  end
+end
+local function source_agent(all)
+  if not all[source] then error("source pane is not available", 0) end
+  local current = running(source, all[source])
+  local registered = agent(source)
+  if not current or not registered or registered.agent ~= current.agent or registered.pid ~= current.pid then
+    if current and current.agent == "codex" then error("source registration does not match the running Codex; start Codex with codex --no-daemon so its SessionStart hook can register this pane", 0) end
+    error("source registration does not match the running agent; configure its SessionStart hook and restart the agent", 0)
+  end
+  return registered
 end
 local function pair_save(a, b)
   local pairs = read_json(state .. "/pairs.json", true)
@@ -86,40 +103,37 @@ local function pick(candidates)
 end
 local function short(id) return "…" .. id:sub(-6) end
 local function label(reg, id)
-  return reg.agent .. " " .. transcript.display_path(reg.hook.cwd or "?", nil) .. " (" .. short(id) .. ")"
+  return reg.agent .. " " .. transcript.display_path(reg.cwd or "?", nil) .. " (" .. short(id) .. ")"
 end
 local function collect(limit)
-  local src = agent(source)
-  if not src then error("source agent is not registered; configure the SessionStart hook and restart the agent", 0) end
-  if type(src.hook.transcript_path) ~= "string" then error("source hook has no transcript_path", 0) end
   local all = panes()
-  if not all[source] then error("source pane is not available", 0) end
+  local src = source_agent(all)
   local pairs = read_json(state .. "/pairs.json", true)
   local target_id = pairs[source]
-  local target = target_id and agent(target_id)
+  local target = target_id and running(target_id, all[target_id])
   local pending = target_id and all[target_id] and not target
-  if not target or not foreground(target_id, all[target_id], target.agent) then target, target_id = nil, nil end
+  if not target then target_id = nil end
   local cursors = read_json(state .. "/cursors.json", true)
-  local offset = cursors[src.hook.transcript_path] or 0
+  local offset = cursors[src.transcript_path] or 0
   if type(offset) ~= "number" or offset < 0 then error("invalid relay point", 0) end
-  local lines, ending = transcript.read(src.hook.transcript_path, offset, limit)
+  local lines, ending = transcript.read(src.transcript_path, offset, limit)
   local parsed = transcript.parse(src.agent, lines)
   local cwd = parsed.latest_cwd
   if not cwd and offset > 0 then
-    local earlier = transcript.read(src.hook.transcript_path, 0, offset)
+    local earlier = transcript.read(src.transcript_path, 0, offset)
     cwd = transcript.parse(src.agent, earlier).latest_cwd
   end
-  cwd = cwd or src.hook.cwd
+  cwd = cwd or src.cwd
   if not cwd then error("source working directory is unavailable", 0) end
   return {src=src, target=target, target_id=target_id, pending=pending, panes=all, cursors=cursors, parsed=parsed, cwd=cwd, ending=ending}
 end
 local function choose_pair()
-  if not agent(source) then error("source agent is not registered", 0) end
   local all, candidates = panes(), {}
+  source_agent(all)
   for id, pane in pairs(all) do
     if id ~= source then
-      local reg = agent(id)
-      if reg and foreground(id, pane, reg.agent) then candidates[#candidates + 1] = label(reg,id) .. " " .. pane.session_label .. "\t" .. id end
+      local target = running(id, pane)
+      if target then candidates[#candidates + 1] = label(target,id) .. " " .. (pane.session_label or "") .. "\t" .. id end
     end
   end
   table.sort(candidates)
@@ -143,7 +157,8 @@ local function deliver(plan, note, kind, by)
   end
   if plan.target then
     local pane = plan.panes[plan.target_id]
-    if not foreground(plan.target_id, pane, plan.target.agent) then error("target is no longer running its agent; nothing was sent", 0) end
+    local current = running(plan.target_id, pane)
+    if not current or current.agent ~= plan.target.agent or current.pid ~= plan.target.pid then error("target is no longer running its agent; nothing was sent", 0) end
     if body:find("\27[201~", 1, true) then error("relay contains a bracketed paste terminator", 0) end
     local function write(data)
       local result = call("com.superlogical.terminal.write", {session_id=pane.session_id, block_id=plan.target_id, args={data=data}})
@@ -151,18 +166,20 @@ local function deliver(plan, note, kind, by)
     end
     write("\27[200~" .. body .. "\27[201~")
     rex.sleep(0.3)
-    if not foreground(plan.target_id, pane, plan.target.agent) then error("target exited before submission", 0) end
+    current = running(plan.target_id, pane)
+    if not current or current.agent ~= plan.target.agent or current.pid ~= plan.target.pid then error("target exited before submission", 0) end
     write("\r")
   else
     if not kinds[kind] then error("unknown agent kind: " .. tostring(kind), 0) end
-    local command = kind == "codex" and {kind, "--no-daemon", body} or {kind, body}
+    local command = {}; for _, arg in ipairs(kinds[kind].start) do command[#command + 1] = arg end
+    command[#command + 1] = body
     local split, err = rex.session.new_split{session_id=plan.panes[source].session_id, anchor_id=source, direction="horizontal", side="after", ratio=0.5, focus=false,
       layout=rex.layout.block{flavor="com.superlogical.terminal.shell", options={cwd=plan.cwd, command=command}}}
     if not split then error(tostring(err), 0) end
     local new_id = assert(split.block_ids[1])
     pair_save(source, new_id)
   end
-  plan.cursors[plan.src.hook.transcript_path] = plan.ending
+  plan.cursors[plan.src.transcript_path] = plan.ending
   save_json(state .. "/cursors.json", plan.cursors)
   return 0
 end
@@ -185,7 +202,7 @@ local function run()
     if text ~= "" then print("\n" .. text) end
     return #plan.parsed.messages == 0 and #plan.parsed.files == 0 and 2 or 0
   end
-  if plan.pending then error("paired pane has not registered; wait for the agent or close the pane before retrying", 0) end
+  if plan.pending then error("paired pane has no supported foreground agent; start its agent or close the pane before retrying", 0) end
   local note, kind, by = "", rex.args.kind, rex.args.by or "auto"
   if by ~= "human" and by ~= "auto" then error("by must be human or auto", 0) end
   if mode == "send" then
