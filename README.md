@@ -117,3 +117,7 @@ Verified locally with Rex Beta: piped stdin and exit code 2, `peek`, cross-sessi
 ## Future auto mode
 
 A future caller can trigger on an agent turn ending, run `peek`, ask a judge agent whether to relay and what note to write, and call `deliver` with the returned `until`. It can use `by="auto"` to count automatic relays and stop after a configured number of round trips. This repository does not implement the trigger, judge, or loop prevention.
+
+## Acknowledgements
+
+This project is inspired by the relay in [Kanary](https://kanary.to/agents), whose relay format with speaker labels and `[refs: …]` lines it follows, and by [Agent Relay](https://agentrelay.com), which lets coding agents message each other directly.
