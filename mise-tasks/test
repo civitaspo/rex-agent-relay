@@ -1,0 +1,22 @@
+#!/bin/sh
+#MISE depends=["install-lua"]
+set -eu
+
+cache="$MISE_PROJECT_ROOT/.mise/lua-5.1.5-lunajson-1.2.3-1/installed"
+export PATH="$cache/lua-5.1.5/src:$PATH"
+export LUA_PATH="$cache/lunajson/src/?.lua;$cache/lunajson/src/?/init.lua;;"
+
+test -s README.md && test -s LICENSE
+sh test/install_lua_test.sh
+lua test/json_contract.lua
+if [ -n "${REX_BIN_DIR:-}" ] && [ -x "$REX_BIN_DIR/rex" ]; then
+  "$REX_BIN_DIR/rex" 'do' test/json_contract.lua
+fi
+lua test/action_test.lua
+lua test/bootstrap.lua
+state=$(mktemp -d)
+trap 'rm -rf "$state"' EXIT
+XDG_STATE_HOME="$state" lua test/relay_bootstrap.lua
+XDG_STATE_HOME="$state" lua test/hook_test.lua
+luac -p rex-agent-relay/*.lua hooks/session-start.lua
+sh -n test/hook_rex_test.sh

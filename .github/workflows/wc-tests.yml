@@ -16,8 +16,6 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
-      - name: Install Lua build dependency
-        run: sudo apt-get update && sudo apt-get install -y libreadline-dev
       - name: Set up mise
         uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5.2.5
         with:
@@ -25,4 +23,8 @@ jobs:
           install_args: "--locked"
           cache: false
       - name: Test
-        run: mise run test
+        run: |
+          mise run test
+          output=$(mise run test 2>&1) || { printf '%s\n' "$output"; exit 1; }
+          printf '%s\n' "$output"
+          printf '%s\n' "$output" | grep -F 'Using cached Lua and lunajson.'

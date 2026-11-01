@@ -13,7 +13,7 @@ run = [
   "pinact run --check --verify-comment",
   "ghalint run",
   "gh-actions-lock --verify-local",
-  "git ls-files -z '*.sh' | xargs -0 -n 1 sh -c 'for file do shellcheck \"$file\"; done' sh",
+  "git ls-files -z '*.sh' 'mise-tasks/*' | xargs -0 -n 1 sh -c 'for file do shellcheck \"$file\"; done' sh",
   "ast-grep scan",
   "ast-grep test --skip-snapshot-tests",
 ]
@@ -26,27 +26,3 @@ run = "gh-actions-lock --verify"
 
 [tasks.fix]
 run = ["pinact run --verify-comment", "disable-checkout-persist-credentials", "mise run actions-lock"]
-
-[tasks.test]
-tools = { lua = "5.1.5" }
-run = '''
-set -eu
-rocks="$MISE_PROJECT_ROOT/.mise/lua"
-if ! luarocks --tree "$rocks" show lunajson 1.2.3-1 >/dev/null 2>&1; then
-  luarocks --tree "$rocks" install lunajson 1.2.3-1
-fi
-eval "$(luarocks --tree "$rocks" path)"
-test -s README.md && test -s LICENSE
-lua test/json_contract.lua
-if [ -n "${REX_BIN_DIR:-}" ] && [ -x "$REX_BIN_DIR/rex" ]; then
-  "$REX_BIN_DIR/rex" do test/json_contract.lua
-fi
-lua test/action_test.lua
-lua test/bootstrap.lua
-state=$(mktemp -d)
-trap 'rm -rf "$state"' EXIT
-XDG_STATE_HOME="$state" lua test/relay_bootstrap.lua
-XDG_STATE_HOME="$state" lua test/hook_test.lua
-luac -p rex-agent-relay/*.lua hooks/session-start.lua
-sh -n test/hook_rex_test.sh
-'''
