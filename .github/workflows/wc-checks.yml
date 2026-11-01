@@ -30,5 +30,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: mise run actions-lock-verify
+      - name: Install Lua dependencies
+        run: sudo apt-get update && sudo apt-get install -y lua5.1 lua-cjson
       - name: Test
         run: mise run test
