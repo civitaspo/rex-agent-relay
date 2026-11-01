@@ -80,9 +80,10 @@ end
 local function source_agent(all)
   if not all[source] then error("source pane is not available", 0) end
   local current = running(source, all[source])
+  if not current then error("source pane is not running Claude Code or Codex", 0) end
   local registered = agent(source)
-  if not current or not registered or registered.agent ~= current.agent or registered.pid ~= current.pid then
-    if current and current.agent == "codex" then error("source registration does not match the running Codex; start Codex with codex --no-daemon so its SessionStart hook can register this pane", 0) end
+  if not registered or registered.agent ~= current.agent or registered.pid ~= current.pid then
+    if current.agent == "codex" then error("source registration does not match the running Codex; start Codex with codex --no-daemon so its SessionStart hook can register this pane", 0) end
     error("source registration does not match the running agent; configure its SessionStart hook and restart the agent", 0)
   end
   return registered

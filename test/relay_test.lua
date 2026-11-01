@@ -98,19 +98,25 @@ os.exit = function(code) error({exit=code}) end
 local readable, read_result = pcall(dofile, "rex-agent-relay/relay.lua")
 os.exit, io.open = original_exit, original_open
 assert(not readable and type(read_result) == "table" and read_result.exit == 1)
-local function rejected_source(process)
+local function rejected_source(process, expected)
   rex.call = function(method, args)
     if method == "com.superlogical.terminal.process" and args.block_id == source then return {foreground=process} end
     return original_call(method, args)
   end
   rex.args = {mode="peek", source=source}
+  local original_stderr, message = io.stderr, {}
+  io.stderr = {write=function(_, text) message[#message + 1] = text end}
   os.exit = function(code) error({exit=code}) end
   local valid, result = pcall(dofile, "rex-agent-relay/relay.lua")
-  os.exit, rex.call = original_exit, original_call
+  os.exit, rex.call, io.stderr = original_exit, original_call, original_stderr
   assert(not valid and type(result) == "table" and result.exit == 1)
+  local output = table.concat(message)
+  assert(output:find(expected, 1, true), "expected " .. expected .. "; got " .. output)
 end
-rejected_source({name="claude",pid=999})
-rejected_source({name="codex",pid=101})
+rejected_source({name="claude",pid=999}, "configure its SessionStart hook")
+rejected_source({name="codex",pid=101}, "codex --no-daemon")
+rejected_source({name="zsh",pid=999}, "source pane is not running Claude Code or Codex")
+rejected_source(nil, "source pane is not running Claude Code or Codex")
 local original_exec = rex.exec
 rex.exec = function(argv, opts)
   if argv[1] == "sh" then
