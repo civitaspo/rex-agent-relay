@@ -30,5 +30,3 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: mise run actions-lock-verify
-      - name: Test
-        run: mise run test

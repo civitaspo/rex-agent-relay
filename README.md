@@ -1,10 +1,119 @@
 # rex-agent-relay
 
-Install the tools with `mise install`, then use these commands:
+Relay the new part of a Claude Code or Codex conversation to another agent in Rex, together with changed file paths and a note. Both agents work in the same directory. See the [glossary](docs/GLOSSARY.md) for the terms used here.
 
-- `mise run lint` checks workflows and source files.
-- `mise run fix` applies supported automatic fixes.
-- `mise run test` runs the project tests.
+## Requirements
 
-The lint task uses ast-grep to flag direct Lua shell execution and dynamic code
-loading. These syntax-based rules do not trace data flow or calls through aliases.
+- Rex Beta. Its terminals provide `REX_BIN_DIR`, which the input window uses to find `rex`. To run the examples from another terminal, add the `rex` CLI to your `PATH` or use its absolute path.
+- Claude Code and Codex with SessionStart hooks enabled. Start Codex sources with `codex --no-daemon` so the hook receives the pane environment.
+- `fzf`, or another fuzzy finder that reads candidates from stdin and writes the selected line to stdout.
+
+## Install
+
+1. Clone the repository, for example with `ghq get civitaspo/rex-agent-relay`.
+2. Add the repository directory to `package.path` in `~/.config/rex/init.lua` and register the actions. Replace the path if your clone is elsewhere.
+
+   ```lua
+   package.path = os.getenv("HOME") .. "/src/github.com/civitaspo/rex-agent-relay/?/init.lua;" .. package.path
+   require("rex-agent-relay").setup{ key = "cmd+shift+r" }
+   ```
+
+3. Run `rex config reload`.
+4. Add a SessionStart command hook to `~/.claude/settings.json` and `~/.codex/hooks.json`. Keep any existing hooks. Replace the path with the path to your clone.
+
+   Claude Code:
+
+   ```json
+   {"type":"command","timeout":5,"command":"[ -n \"$REX_BIN_DIR\" ] || exit 0; \"$REX_BIN_DIR/rex\" do \"$HOME/src/github.com/civitaspo/rex-agent-relay/hooks/session-start.lua\" agent=claude pid=$PPID"}
+   ```
+
+   Codex:
+
+   ```json
+   {"type":"command","timeout":5,"command":"[ -n \"$REX_BIN_DIR\" ] || exit 0; \"$REX_BIN_DIR/rex\" do \"$HOME/src/github.com/civitaspo/rex-agent-relay/hooks/session-start.lua\" agent=codex pid=$PPID"}
+   ```
+
+   Place each command in a `hooks.SessionStart` entry's `hooks` array. Approve the Codex hook with `/hooks` if required. Restart the agent in Rex so that the hook registers its conversation. Codex runs SessionStart when its first prompt starts a conversation. Outside Rex, the hook does nothing.
+
+[ADR 0001](docs/adr/0001-register-sources-with-sessionstart-hooks.md) explains why sources register through hooks. The hook stores the agent's SessionStart data under `${XDG_STATE_HOME:-~/.local/state}/rex-agent-relay/agents`. Relay points and pairs are stored in the same state directory. Configure these files and the outbox with permissions appropriate for conversation data.
+
+To update, pull the repository and run `rex config reload`. You can manage the clone, Rex configuration, and hooks with home-manager.
+
+## Send a relay
+
+Focus an agent pane and press `cmd+shift+r`, or run **Agent Relay: Send** from the command palette. If no live pair exists, select an agent kind to start beside the source. Enter a one-line note and press Enter. An empty note is allowed when the conversation has changed.
+
+Use **Agent Relay: Change Pair** to pair the source with an existing agent pane, including one in another Rex session. Each pane belongs to one pair. A new pair replaces each pane's old pair.
+
+The target receives the conversation in an `<agent-relay>` tag, followed by the note. The `by` attribute identifies who chose the relay, and `bytes` records the length of the quoted content so that closing tags in either part remain readable. Changed files appear at the end of each turn as `[refs: edited path; wrote path]`. A relayed conversation is not sent back to its source, though its note remains visible as a relayed note.
+
+Targets are identified by their foreground process and do not need a SessionStart registration. This includes Codex started with its shared daemon. If a paired pane is still open but is not running a supported agent, restart its agent or close the pane before retrying. A new target starts in the source's latest working directory. Codex targets start with `--no-daemon` so they can also be used as sources. Both agents can edit the same files.
+
+## Peek and deliver
+
+`peek` prints the next conversation delta without changing the relay point or pair:
+
+```sh
+rex do /path/to/rex-agent-relay/rex-agent-relay/relay.lua mode=peek source=block:...
+```
+
+```text
+source: claude ~/src/foo (…a1b2c3)
+target: codex ~/src/foo (…d4e5f6)
+until: 123456
+2 messages, 1 files since last relay
+
+user: Compare the designs.
+
+claude: I compared them.
+
+[refs: edited src/a.ts]
+```
+
+`target: none` means there is no live pair. The first four lines are the header. The remainder is the same conversation text included in the relay. `until` is the byte position after the last complete transcript line read.
+
+`deliver` reads a plain-text note from stdin and sends without opening a window or fuzzy finder:
+
+```sh
+printf '%s\n' 'Review the design and list the risks.' |
+  rex do /path/to/rex-agent-relay/rex-agent-relay/relay.lua mode=deliver source=block:... until=123456 kind=codex by=auto
+```
+
+`source` is required. `until` is optional. Pass the value from `peek` to exclude later transcript entries. `kind` selects the agent to start if no pair exists. It defaults to the other agent kind. `by` is `auto` by default and can be `human` or `auto`. To send without a note, redirect stdin from `/dev/null`.
+
+Both commands exit with `0` when there is content to peek or a relay was sent, `2` when there is nothing to relay, and `1` on error. Errors go to stderr. `send` uses the same exit codes.
+
+## Configuration
+
+Set these variables in your login shell's startup files.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `REX_AGENT_RELAY_FUZZY_FINDER` | `fzf` | Command used to select a kind or pane. Arguments are allowed. |
+| `REX_AGENT_RELAY_INLINE_MAX` | `20000` | Maximum relay size in bytes before writing a relay file. |
+| `REX_AGENT_RELAY_OUTBOX_DIR` | `<state directory>/outbox` | Directory for relay files. |
+
+For long relays, the target receives the file path and a summary of changed files. The file contains the full relay. Relay files are not deleted automatically. Claude Code may ask permission to read the outbox outside its working directory. Add the outbox to `permissions.additionalDirectories` if appropriate.
+
+## Limitations
+
+- Changed files come from Claude's editing tools and Codex `FileChange` records. Shell commands that change files are not included.
+- The relay reads complete JSONL lines only. Transcript formats and Rex Beta APIs may change.
+- Only panes on the same Rex server are supported. Rex cannot move a pane between sessions.
+- The input window accepts a single-line note. `deliver` accepts multiple lines.
+- Do not run concurrent relays against the same state directory. Pair and relay point updates are not synchronized across processes.
+- Rex queues terminal writes. The agent may exit between a foreground check and receipt of the text. Check the target before retrying a failed relay because a failed submission may already have pasted text.
+- A new pane receives the relay at startup, so its relay point advances when Rex creates the pane. If the agent fails to start, close the pane and stop other relays. Back up `<state directory>/cursors.json`, find the source's `transcript_path` in `<state directory>/agents/<source block ID without block:>.json`, and remove only that path's entry from `cursors.json`. Retry the relay; this resends the entire transcript, including any previously relayed conversation. An open paired pane with no supported foreground agent blocks further relays until its agent starts or the pane is closed.
+- Older relays without a `bytes` attribute use the last `</agent-relay>` as the boundary, so a closing tag in an older note may be misidentified.
+
+## Verification
+
+Install the tools with `mise install`. Run `mise run lint` to check workflows and source files, `mise run test` to run the project tests, and `mise run fix` to apply supported automatic fixes. The test task downloads Lua 5.1 and pure Lua `lunajson`, checks their pinned SHA-256 hashes, and builds Lua on first use. It reuses the files under `.mise/` and checks the downloaded archives on every run; remove that directory to rebuild. The built files are trusted on reuse. Building Lua requires a C compiler, make, curl, unzip, and shasum. The ast-grep rules flag direct Lua shell execution and dynamic code loading; they do not trace data flow or calls through aliases. Test harness files that need these operations are excluded from the relevant rules.
+
+The transcript and hook checks run in CI. Set `REX_BIN_DIR` to the directory containing `rex` to run the JSON contract tests against Rex as part of `mise run test`. With Rex installed, you can also run `rex do test/transcript_test.lua`, `XDG_STATE_HOME=$(mktemp -d) rex do test/hook_test.lua`, and `REX_BIN_DIR=/path/to/rex/bin sh test/hook_rex_test.sh` from the repository root. The JSON contract test checks the shared behavior used by the test adapter; it does not claim complete compatibility with Rex's JSON API.
+
+Verified locally with Rex Beta: piped stdin and exit code 2, `peek`, cross-session pairing with fzf, floating-layer note input, and bracketed-paste delivery to Claude Code and Codex. Claude Code 2.1.305 and Codex 0.163.0 SessionStart hooks and new target startup were tested in isolated workspaces. Codex must use `--no-daemon`: the shared daemon does not pass the pane environment to its hooks.
+
+## Future auto mode
+
+A future caller can trigger on an agent turn ending, run `peek`, ask a judge agent whether to relay and what note to write, and call `deliver` with the returned `until`. It can use `by="auto"` to count automatic relays and stop after a configured number of round trips. This repository does not implement the trigger, judge, or loop prevention.

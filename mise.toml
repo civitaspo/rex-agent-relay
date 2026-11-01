@@ -13,7 +13,7 @@ run = [
   "pinact run --check --verify-comment",
   "ghalint run",
   "gh-actions-lock --verify-local",
-  "git ls-files -z '*.sh' | xargs -0 -n 1 sh -c 'for file do shellcheck \"$file\"; done' sh",
+  "git ls-files -z '*.sh' 'mise-tasks/*' | xargs -0 -n 1 sh -c 'for file do shellcheck \"$file\"; done' sh",
   "ast-grep scan",
   "ast-grep test --skip-snapshot-tests",
 ]
@@ -26,6 +26,3 @@ run = "gh-actions-lock --verify"
 
 [tasks.fix]
 run = ["pinact run --verify-comment", "disable-checkout-persist-credentials", "mise run actions-lock"]
-
-[tasks.test]
-run = "test -s README.md && test -s LICENSE"

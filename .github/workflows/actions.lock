@@ -19,6 +19,9 @@ workflows:
         - 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262'
         - 'civitaspo/csm-ci-actions@4eec63156502010e1d11aa0e5b7ff31a64788d3e'
         - 'jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195'
+    '.github/workflows/wc-tests.yml':
+        - 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262'
+        - 'jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195'
     '.github/workflows/workflow_call_pr.yml': []
     '.github/workflows/workflow_call_push.yml': []
 dependencies:

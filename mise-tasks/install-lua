@@ -1,0 +1,42 @@
+#!/bin/sh
+set -eu
+
+cache="$MISE_PROJECT_ROOT/.mise/lua-5.1.5-lunajson-1.2.3-1"
+mkdir -p "$cache"
+tmp=$(mktemp -d "$cache/.install.XXXXXXXX")
+trap 'rm -rf "$tmp"' EXIT
+
+download() {
+  url=$1
+  name=$2
+  digest=$3
+  if [ ! -f "$cache/$name" ]; then
+    curl -fsSL "$url" -o "$tmp/$name"
+    printf '%s  %s\n' "$digest" "$tmp/$name" | shasum -a 256 -c
+    mv "$tmp/$name" "$cache/$name"
+  fi
+  printf '%s  %s\n' "$digest" "$cache/$name" | shasum -a 256 -c
+}
+
+download https://www.lua.org/ftp/lua-5.1.5.tar.gz lua.tar.gz \
+  2640fc56a795f29d28ef15e13c34a47e223960b0240e8cb0a82d9b0738695333
+download https://luarocks.org/lunajson-1.2.3-1.src.rock lunajson.src.rock \
+  7ed424b5ba8952a1fb3ec444c9443f0ca61e217dc1cd749173a158e8c682dd61
+
+if [ -x "$cache/installed/lua-5.1.5/src/lua" ] && \
+   [ -x "$cache/installed/lua-5.1.5/src/luac" ] && \
+   [ -f "$cache/installed/lunajson/src/lunajson.lua" ]; then
+  printf '%s\n' 'Using cached Lua and lunajson.'
+  exit 0
+fi
+
+if [ -e "$cache/installed" ]; then
+  printf 'Incomplete Lua cache; remove %s and retry.\n' "$cache/installed" >&2
+  exit 1
+fi
+
+mkdir "$tmp/installed"
+tar -xzf "$cache/lua.tar.gz" -C "$tmp/installed"
+unzip -q "$cache/lunajson.src.rock" -d "$tmp/installed"
+make -C "$tmp/installed/lua-5.1.5" posix
+mv "$tmp/installed" "$cache/installed"

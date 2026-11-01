@@ -10,6 +10,10 @@ jobs:
     uses: ./.github/workflows/wc-checks.yml
     permissions:
       contents: read
+  tests:
+    uses: ./.github/workflows/wc-tests.yml
+    permissions:
+      contents: read
   pr-title:
     uses: ./.github/workflows/wc-pr-title.yml
     permissions:
