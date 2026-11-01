@@ -1,3 +1,2 @@
-local cjson = require("cjson")
-rex = {json = {encode = cjson.encode, decode = cjson.decode}}
+rex = {json = require("test.json")}
 dofile("test/transcript_test.lua")

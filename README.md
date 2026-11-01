@@ -108,9 +108,9 @@ For long relays, the target receives the file path and a summary of changed file
 
 ## Verification
 
-Install the tools with `mise install` and install Lua 5.1 with lua-cjson. Run `mise run lint` to check workflows and source files, `mise run test` to run the project tests, and `mise run fix` to apply supported automatic fixes. The ast-grep rules flag direct Lua shell execution and dynamic code loading; they do not trace data flow or calls through aliases. Test harness files that need these operations are excluded from the relevant rules.
+Install the tools with `mise install`. Run `mise run lint` to check workflows and source files, `mise run test` to run the project tests, and `mise run fix` to apply supported automatic fixes. The test task installs the pinned pure Lua `lunajson` dependency into `.mise/lua` on first use. Lua 5.1 requires a C compiler and readline development headers to build. The ast-grep rules flag direct Lua shell execution and dynamic code loading; they do not trace data flow or calls through aliases. Test harness files that need these operations are excluded from the relevant rules.
 
-The transcript and hook checks run in CI. With Rex installed, run `rex do test/transcript_test.lua`, `XDG_STATE_HOME=$(mktemp -d) rex do test/hook_test.lua`, and `REX_BIN_DIR=/path/to/rex/bin sh test/hook_rex_test.sh` from the repository root.
+The transcript and hook checks run in CI. Set `REX_BIN_DIR` to the directory containing `rex` to run the JSON contract tests against Rex as part of `mise run test`. With Rex installed, you can also run `rex do test/transcript_test.lua`, `XDG_STATE_HOME=$(mktemp -d) rex do test/hook_test.lua`, and `REX_BIN_DIR=/path/to/rex/bin sh test/hook_rex_test.sh` from the repository root. The JSON contract test checks the shared behavior used by the test adapter; it does not claim complete compatibility with Rex's JSON API.
 
 Verified locally with Rex Beta: piped stdin and exit code 2, `peek`, cross-session pairing with fzf, floating-layer note input, and bracketed-paste delivery to Claude Code and Codex. Claude Code 2.1.305 and Codex 0.163.0 SessionStart hooks and new target startup were tested in isolated workspaces. Codex must use `--no-daemon`: the shared daemon does not pass the pane environment to its hooks.
 

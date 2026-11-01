@@ -3,8 +3,7 @@ local json, exec
 if rex and rex.json then
   json, exec = rex.json, rex.exec
 else
-  local cjson = require("cjson")
-  json = {encode = cjson.encode, decode = cjson.decode}
+  json = require("test.json")
   exec = function(argv)
     if argv[1] == "mkdir" then
       local ok = os.execute("mkdir -p '" .. argv[3] .. "'")

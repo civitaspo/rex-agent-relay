@@ -1,0 +1,25 @@
+local json = rex and rex.json or require("test.json")
+
+local function failure(fn, input)
+  local ok, value, err = pcall(fn, input)
+  assert(ok and value == nil and type(err) == "string")
+end
+
+assert(json.encode({}) == "{}")
+local value = assert(json.decode('[1,null,2,{"items":[null,3,null,4],"missing":null}]'))
+assert(value[1] == 1 and value[2] == 2 and value[3].items[1] == 3 and value[3].items[2] == 4)
+assert(value[3].missing == nil and value[3].items[3] == nil)
+local mixed = assert(json.decode(assert(json.encode({[1] = "first", other = "second"}))))
+assert(mixed["1"] == "first" and mixed.other == "second")
+local sparse = assert(json.decode(assert(json.encode({[2] = "second"}))))
+assert(sparse["2"] == "second")
+local zero = assert(json.decode(assert(json.encode({[0] = "zero", [1] = "first"}))))
+assert(zero["0"] == "zero" and zero["1"] == "first")
+local array = assert(json.decode(assert(json.encode({"first", "second"}))))
+assert(array[1] == "first" and array[2] == "second")
+failure(json.decode, "{")
+failure(json.encode, {key = function() end})
+failure(json.encode, {[true] = "bad"})
+local cyclic = {}; cyclic.self = cyclic
+failure(json.encode, cyclic)
+print("JSON contract tests passed")

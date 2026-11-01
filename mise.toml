@@ -1,4 +1,5 @@
 [tools]
+lua = "5.1.5"
 "aqua:ast-grep/ast-grep" = "0.51.0"
 "aqua:jdx/jactionlint" = "2.4.0"
 "aqua:koalaman/shellcheck" = "0.11.0"
@@ -28,12 +29,24 @@ run = "gh-actions-lock --verify"
 run = ["pinact run --verify-comment", "disable-checkout-persist-credentials", "mise run actions-lock"]
 
 [tasks.test]
-run = [
-  "test -s README.md && test -s LICENSE",
-  "lua5.1 test/action_test.lua",
-  "lua5.1 test/bootstrap.lua",
-  "state=$(mktemp -d); trap 'rm -rf \"$state\"' EXIT; XDG_STATE_HOME=\"$state\" lua5.1 test/relay_bootstrap.lua",
-  "state=$(mktemp -d); trap 'rm -rf \"$state\"' EXIT; XDG_STATE_HOME=\"$state\" lua5.1 test/hook_test.lua",
-  "luac5.1 -p rex-agent-relay/*.lua hooks/session-start.lua",
-  "sh -n test/hook_rex_test.sh",
-]
+run = '''
+set -eu
+rocks="$MISE_PROJECT_ROOT/.mise/lua"
+if ! luarocks --tree "$rocks" show lunajson 1.2.3-1 >/dev/null 2>&1; then
+  luarocks --tree "$rocks" install lunajson 1.2.3-1
+fi
+eval "$(luarocks --tree "$rocks" path)"
+test -s README.md && test -s LICENSE
+lua test/json_contract.lua
+if [ -n "${REX_BIN_DIR:-}" ] && [ -x "$REX_BIN_DIR/rex" ]; then
+  "$REX_BIN_DIR/rex" do test/json_contract.lua
+fi
+lua test/action_test.lua
+lua test/bootstrap.lua
+state=$(mktemp -d)
+trap 'rm -rf "$state"' EXIT
+XDG_STATE_HOME="$state" lua test/relay_bootstrap.lua
+XDG_STATE_HOME="$state" lua test/hook_test.lua
+luac -p rex-agent-relay/*.lua hooks/session-start.lua
+sh -n test/hook_rex_test.sh
+'''

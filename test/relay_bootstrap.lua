@@ -1,5 +1,4 @@
-local cjson = require("cjson")
-rex = {json = {encode = cjson.encode, decode = cjson.decode}}
+rex = {json = require("test.json")}
 rex.exec = function(argv)
   if argv[1] == "mktemp" then
     local path = argv[2]:gsub("XXXXXXXX$", tostring(os.time()) .. tostring(math.random(1000000000)))
