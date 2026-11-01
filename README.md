@@ -4,7 +4,7 @@
 
 Relay the new part of a Claude Code or Codex conversation to another agent in Rex, together with the files it changed and a note. Both agents work in the same directory, so the reviewer picks up exactly where the builder left off.
 
-![demo]https://github.com/user-attachments/assets/6d2269f3-20fd-44f0-8f28-be5cbed23912)
+![demo](https://github.com/user-attachments/assets/6d2269f3-20fd-44f0-8f28-be5cbed23912)
 
 - **One shortcut.** Press `cmd+shift+r` in an agent pane and the conversation moves to its paired agent.
 - **Only what's new.** Each relay starts where the last one ended, so nothing is sent twice.
