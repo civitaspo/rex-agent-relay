@@ -15,7 +15,7 @@ See the [glossary](docs/GLOSSARY.md) for the terms used here.
 
 ## Requirements
 
-- Rex Beta. Its terminals provide `REX_BIN_DIR`, which the input window uses to find `rex`. To run the examples from another terminal, add the `rex` CLI to your `PATH` or use its absolute path.
+- Rex Beta. Its terminals provide `REX_BIN_DIR`, which the Relay window uses to find `rex`. To run the examples from another terminal, add the `rex` CLI to your `PATH` or use its absolute path.
 - Claude Code and Codex with SessionStart hooks enabled. Start Codex sources with `codex --no-daemon` so the hook receives the pane environment.
 - `fzf`, or another fuzzy finder that reads candidates from stdin and writes the selected line to stdout.
 
@@ -52,7 +52,7 @@ To update, pull the repository and run `rex config reload`. You can manage the c
 
 ## Send a relay
 
-Focus an agent pane and press `cmd+shift+r`, or run **Agent Relay: Send** from the command palette. If no live pair exists, select an agent kind to start beside the source. The window shows the conversation and accepts a note. Press Enter to send or Esc to cancel. An empty note is allowed when the conversation has changed.
+Focus an agent pane and press `cmd+shift+r`, or run **Agent Relay: Send** from the command palette. If no live pair exists, select an agent kind to start beside the source. The Relay window opens. It shows the conversation and accepts a note. Press Enter to send or Esc to cancel. An empty note is allowed when the conversation has changed.
 
 Press `ctrl+g` to edit a multiline note in your editor. After you return, press Enter to send it or Esc twice to discard it. Press `ctrl+o` to read the conversation in your pager. Both keys can be changed in `setup`.
 
