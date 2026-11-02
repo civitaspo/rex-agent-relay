@@ -228,4 +228,14 @@ os.exit, rex.exec, print = original_exit, original_exec, original_print
 assert(not located and type(locate_result) == "table" and locate_result.exit == 0)
 assert(searched[2] == base .. "/projects" and searched[#searched] == "moved.jsonl")
 assert(table.concat(printed, "\n"):find("user: resumed elsewhere", 1, true))
+os.remove(moved)
+rex.exec = function(argv, opts)
+  if argv[1] == "find" then return { ok = true, stdout = "" } end
+  return original_exec(argv, opts)
+end
+print = function(_) end
+os.exit = function(code) error({ exit = code }) end
+local unwritten, unwritten_result = pcall(dofile, "rex-agent-relay/relay.lua")
+os.exit, rex.exec, print = original_exit, original_exec, original_print
+assert(not unwritten and type(unwritten_result) == "table" and unwritten_result.exit == 2)
 print("relay tests passed")

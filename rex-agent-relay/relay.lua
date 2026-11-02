@@ -137,7 +137,6 @@ local function source_agent(all)
       0
     )
   end
-  registered.transcript_path = locate(registered.transcript_path)
   return registered
 end
 local function pair_save(a, b)
@@ -164,6 +163,7 @@ end
 local function collect(limit)
   local all = panes()
   local src = source_agent(all)
+  src.transcript_path = locate(src.transcript_path)
   local pairs = read_json(state .. "/pairs.json", true)
   local target_id = pairs[source]
   local target = target_id and running(target_id, all[target_id])
