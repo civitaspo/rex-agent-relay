@@ -76,8 +76,10 @@ function M.transition(state, event)
   elseif kind == "open_editor" or kind == "open_pager" then
     return state, { action = kind }
   elseif state.mode == "input" then
-    if kind == "char" or kind == "paste" then
-      state.text = state.text .. event.text:gsub("[\r\n]+", " ")
+    if kind == "paste" and event.text:find("[\r\n]") then
+      return state, { action = "open_editor", text = state.text .. event.text }
+    elseif kind == "char" or kind == "paste" then
+      state.text = state.text .. event.text
     elseif kind == "backspace" then
       local updated, count = state.text:gsub("[\194-\244][\128-\191]*$", "", 1)
       state.text = count > 0 and updated or state.text:sub(1, -2)
@@ -133,25 +135,25 @@ function M.run(opts)
         if action then
           local editor = action.action == "open_editor"
           local path =
-            command({ "mktemp", (os.getenv("TMPDIR") or "/tmp/") .. "rex-agent-relay.XXXXXXXX" }):match("[^\n]+")
+            command({ "mktemp", (os.getenv("TMPDIR") or "/tmp") .. "/rex-agent-relay.XXXXXXXX" }):match("[^\n]+")
           local file = assert(io.open(path, "wb"))
-          assert(file:write(editor and state.text or opts.conversation))
+          assert(file:write(editor and (action.text or state.text) or opts.conversation))
           assert(file:close())
           io.write("\27[?2004l\27[?25h")
           io.flush()
           restore()
-          local child_ok, child_err = pcall(
-            command,
-            { "sh", "-c", (editor and opts.editor or opts.pager) .. ' "$1" </dev/tty >/dev/tty', "sh", path }
-          )
-          if editor and child_ok then
+          local child, child_err =
+            rex.exec({ "sh", "-c", (editor and opts.editor or opts.pager) .. ' "$1" </dev/tty >/dev/tty', "sh", path })
+          if editor and child and child.ok then
             local f = assert(io.open(path, "rb"))
-            state.text = assert(f:read("*a"))
+            state.text = assert(f:read("*a")):gsub("\n$", "")
             f:close()
             state.mode = "review"
           end
           os.remove(path)
-          if not child_ok then error(child_err, 0) end
+          if not child or (not child.ok and (not editor or child.code == 127)) then
+            error(tostring(child_err or (child and child.stderr) or "command failed"), 0)
+          end
           raw()
           io.write("\27[?2004h")
           io.flush()

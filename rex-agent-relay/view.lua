@@ -44,6 +44,7 @@ function M.render(model, cols, rows)
   end
   add("From: " .. (model.source or "new source"))
   add("To: " .. (model.target or "new target") .. "  " .. tostring(model.count or 0))
+  local header_rows = #lines
   add("")
   add(model.conversation or "No conversation")
   add("")
@@ -58,24 +59,23 @@ function M.render(model, cols, rows)
   lines[#lines + 1] = string.rep("─", note_width)
   add(model.help or "Enter send · Esc cancel")
   local hidden = math.max(0, #lines - rows)
-  local visible = {}
-  if hidden > 0 and rows > 2 then
-    hidden = hidden + 1
-    visible[1] = lines[1]
-    visible[2] = "(" .. hidden .. " lines hidden)"
-    for i = #lines - rows + 3, #lines do
+  local visible, cursor = {}, nil
+  local first = hidden + 1
+  local kept = 0
+  if hidden > 0 and rows > header_rows + 1 then
+    kept = header_rows
+    first = #lines - (rows - kept - 1) + 1
+    hidden = first - kept - 1
+    for i = 1, kept do
       visible[#visible + 1] = lines[i]
     end
-  else
-    for i = hidden + 1, #lines do
-      visible[#visible + 1] = lines[i]
-    end
+    visible[#visible + 1] = "(" .. hidden .. " lines hidden)"
   end
-  local cursor
-  if model.state == nil or model.state == "input" then
-    local first = hidden > 0 and rows > 2 and #lines - rows + 3 or hidden + 1
-    local row = input_row - first + 1 + (hidden > 0 and rows > 2 and 2 or 0)
-    if row >= 1 and row <= #visible and input_row >= first then cursor = { row = row, col = input_col } end
+  for i = first, #lines do
+    visible[#visible + 1] = lines[i]
+    if i == input_row and (model.state == nil or model.state == "input") then
+      cursor = { row = #visible, col = input_col }
+    end
   end
   return visible, hidden, cursor
 end

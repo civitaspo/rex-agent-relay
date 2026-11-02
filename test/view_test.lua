@@ -32,3 +32,11 @@ local _, _, clipped_cursor = view.render({ input = "hello", help = "help" }, 15,
 assert(clipped_cursor.row == 3 and clipped_cursor.col == 6)
 local _, _, review_cursor = view.render({ state = "review", input = "hello" }, 15, 30)
 assert(review_cursor == nil)
+
+local long, hidden_long = view.render(
+  { source = "A", target = "B", count = 2, conversation = string.rep("line\n", 50), input = "note", help = "help" },
+  80,
+  10
+)
+assert(long[1] == "From: A" and long[2] == "To: B  2" and long[3]:find("lines hidden", 1, true))
+assert(hidden_long > 0 and #long == 10)
