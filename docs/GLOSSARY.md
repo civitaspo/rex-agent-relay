@@ -32,6 +32,8 @@
 
 **Pair**: Two panes that can relay to each other. A pane belongs to at most one pair. The panes may belong to different Rex sessions.
 
+**Relay window**: The floating window that opens when a user sends a relay from a source. It shows the relay's conversation and takes the note. Avoid "input window".
+
 **Relay point**: The last position in a conversation included in a relay.
 
 **Relay file**: A file containing the full relay when it is too long to paste into the target.
