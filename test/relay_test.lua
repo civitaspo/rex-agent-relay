@@ -59,6 +59,24 @@ local f = assert(io.open(base .. "/cursors.json"))
 local cursors = rex.json.decode(f:read("*a"))
 f:close()
 assert(cursors[log] == #first)
+local focused
+rex.session = { focus_block = function(args) focused = args end }
+local prompt = require("prompt")
+local original_prompt = prompt.run
+prompt.run = function() return { action = "submit", text = "test" } end
+rex.args = { mode = "send", source = source }
+os.exit = function(code) error({ exit = code }) end
+local sent_ok, sent_result = pcall(dofile, "rex-agent-relay/relay.lua")
+os.exit = original_exit
+assert(not sent_ok and sent_result.exit == 0 and focused.session_id == "s2" and focused.block_id == target)
+prompt.run = function() return { action = "cancel" } end
+focused = nil
+os.exit = function(code) error({ exit = code }) end
+local cancelled, cancel_result = pcall(dofile, "rex-agent-relay/relay.lua")
+os.exit = original_exit
+assert(not cancelled and cancel_result.exit == 1 and focused.session_id == "s1" and focused.block_id == source)
+prompt.run = original_prompt
+write(base .. "/cursors.json", rex.json.encode({ [log] = #first }))
 sent = {}
 rex.args = { mode = "deliver", source = source, ["until"] = #first - 1 }
 os.exit = function(code) error({ exit = code }) end
@@ -69,6 +87,7 @@ assert(not failed and type(failure) == "table" and failure.exit == 1 and #sent =
 write(base .. "/pairs.json", "{}")
 local launched
 rex.session = {
+  focus_block = function(args) focused = args end,
   new_split = function(args)
     launched = args.layout.command or args.layout.options.command
     return { block_ids = { "block:new" } }
@@ -89,6 +108,20 @@ local cursorfile = assert(io.open(base .. "/cursors.json"))
 cursors = rex.json.decode(cursorfile:read("*a"))
 cursorfile:close()
 assert(saved_pairs[source] == "block:new" and cursors[log] == #first + #later)
+write(base .. "/pairs.json", "{}")
+local real_exec = rex.exec
+rex.exec = function(args, opts)
+  if args[1] == "sh" then return { ok = true, stdout = "codex\tcodex\n" } end
+  return real_exec(args, opts)
+end
+prompt.run = function() return { action = "submit", text = "test" } end
+focused = nil
+rex.args = { mode = "send", source = source }
+os.exit = function(code) error({ exit = code }) end
+local new_sent, new_result = pcall(dofile, "rex-agent-relay/relay.lua")
+os.exit, rex.exec, prompt.run = original_exit, real_exec, original_prompt
+assert(not new_sent and new_result.exit == 0 and focused.session_id == "s1" and focused.block_id == "block:new")
+
 local original_call = rex.call
 rex.call = function(method, args)
   if method == "session.list_blocks" and args.session_id == "s1" then
@@ -113,10 +146,12 @@ local retry_ok, retry_result = pcall(dofile, "rex-agent-relay/relay.lua")
 os.exit, io.read = original_exit, original_read
 assert(not retry_ok and retry_result.exit == 0)
 rex.args = { mode = "send", source = "block:missing" }
+local original_wait_close = prompt.wait_close
+prompt.wait_close = function() error({ waiting = true }) end
 os.exit = function(code) error({ exit = code }) end
 io.read = function() error({ waiting = true }) end
 local ui_ok, ui_result = pcall(dofile, "rex-agent-relay/relay.lua")
-os.exit, io.read = original_exit, original_read
+os.exit, io.read, prompt.wait_close = original_exit, original_read, original_wait_close
 assert(not ui_ok and type(ui_result) == "table" and ui_result.waiting)
 local original_open = io.open
 io.open = function(path, mode)

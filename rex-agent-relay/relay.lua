@@ -1,12 +1,15 @@
 local dir = debug.getinfo(1, "S").source:match("^@?(.*)/[^/]*$") or "."
 package.path = dir .. "/?.lua;" .. package.path
 local transcript = require("transcript")
+local prompt = require("prompt")
+local view = require("view")
 local kinds = {
   claude = { process = { "claude", "claude.js" }, start = { "claude" } },
   codex = { process = { "codex", "codex.js" }, start = { "codex", "--no-daemon" } },
 }
 local state = (os.getenv("XDG_STATE_HOME") or (assert(os.getenv("HOME")) .. "/.local/state")) .. "/rex-agent-relay"
 local source, mode = rex.args.source, rex.args.mode or "send"
+local destination
 
 local function mkdir(path)
   local result, err = rex.exec({ "mkdir", "-p", path })
@@ -230,6 +233,7 @@ local function deliver(plan, note, kind, by)
       error("target exited before submission", 0)
     end
     write("\r")
+    destination = { session_id = pane.session_id, block_id = plan.target_id }
   else
     if not kinds[kind] then error("unknown agent kind: " .. tostring(kind), 0) end
     local command = {}
@@ -255,6 +259,7 @@ local function deliver(plan, note, kind, by)
     if not split then error(tostring(err), 0) end
     local new_id = assert(split.block_ids[1])
     pair_save(source, new_id)
+    destination = { session_id = plan.panes[source].session_id, block_id = new_id }
   end
   plan.cursors[plan.src.transcript_path] = plan.ending
   save_json(state .. "/cursors.json", plan.cursors)
@@ -296,19 +301,55 @@ local function run()
   if by ~= "human" and by ~= "auto" then error("by must be human or auto", 0) end
   if mode == "send" then
     by = "human"
-    print("agent-relay  " .. label(plan.src, source) .. "  ->  " .. target_label)
-    print(count .. " messages, " .. #plan.parsed.files .. " files since last relay")
     if not plan.target then
       local other = plan.src.agent == "claude" and "codex" or "claude"
       local selection = pick({ other .. "\t" .. other, plan.src.agent .. "\t" .. plan.src.agent })
       if not selection then return 1 end
       kind = selection:match("\t([^\t]+)$")
-      print("no pair: start a new " .. kind .. " beside this pane")
     end
-    io.write("note> ")
-    io.flush()
-    note = io.read("*l")
-    if note == nil then return 1 end
+    local conversation = transcript.conversation(plan.parsed, plan.cwd)
+    local editor_key, pager_key = rex.args.editor_key or "ctrl+g", rex.args.pager_key or "ctrl+o"
+    local rows, cols = 24, 80
+    local function size_changed()
+      local size = rex.exec({ "sh", "-c", "/bin/stty size </dev/tty" })
+      local height, width
+      if size and size.stdout then
+        height, width = size.stdout:match("(%d+)%s+(%d+)")
+      end
+      height, width = tonumber(height) or 24, tonumber(width) or 80
+      local changed = height ~= rows or width ~= cols
+      rows, cols = height, width
+      return changed
+    end
+    local choice = prompt.run({
+      editor = rex.args.editor or os.getenv("EDITOR") or "vi",
+      pager = rex.args.pager or os.getenv("PAGER") or "less -R",
+      conversation = conversation,
+      keys = { open_editor = prompt.control(editor_key), open_pager = prompt.control(pager_key) },
+      size_changed = size_changed,
+      render = function(input)
+        size_changed()
+        local lines, _, cursor = view.render({
+          source = label(plan.src, source),
+          target = plan.target and target_label or "new " .. kind,
+          count = count .. " messages, " .. #plan.parsed.files .. " files",
+          conversation = conversation,
+          pager_key = pager_key,
+          state = input.mode,
+          input = input.text,
+          help = "Enter send  Esc cancel  " .. editor_key .. " editor  " .. pager_key .. " pager",
+        }, math.max(1, cols - 1), rows)
+        io.write("\27[H\27[2J" .. table.concat(lines, "\r\n"))
+        if cursor then
+          io.write("\27[" .. cursor.row .. ";" .. cursor.col .. "H\27[?25h")
+        else
+          io.write("\27[?25l")
+        end
+        io.flush()
+      end,
+    })
+    if choice.action == "cancel" then return 1 end
+    note = choice.text
   else
     note = io.read("*a") or ""
     note = note:gsub("\n$", "")
@@ -316,15 +357,34 @@ local function run()
   kind = kind or (plan.src.agent == "claude" and "codex" or "claude")
   return deliver(plan, note, kind, by)
 end
+local function restore_focus()
+  if mode ~= "send" then return end
+  pcall(function()
+    local pane = destination or panes()[source]
+    if pane then
+      rex.session.focus_block({
+        session_id = pane.session_id,
+        block_id = destination and destination.block_id or source,
+      })
+    end
+  end)
+end
 local ok, result = pcall(run)
 if not ok then
+  if mode == "send" then io.write("\27[H\27[2J") end
   io.stderr:write("agent-relay: " .. tostring(result) .. "\n")
   if mode == "send" or mode == "pair" then
-    io.write("Press Enter to close. ")
+    io.write("Press Enter or Esc to close. ")
     io.flush()
-    io.read("*l")
+    prompt.wait_close()
   end
+  restore_focus()
   os.exit(1)
 end
-if result == 2 and mode == "send" then print("nothing to relay") end
+if result == 2 and mode == "send" then
+  io.write("\27[H\27[2JNothing to relay. Press Enter or Esc to close. ")
+  io.flush()
+  prompt.wait_close()
+end
+restore_focus()
 os.exit(result)
