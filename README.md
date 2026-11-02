@@ -96,11 +96,24 @@ Both commands exit with `0` when there is content to peek or a relay was sent, `
 
 ## Configuration
 
-Set these variables in your login shell's startup files.
+Pass Relay window settings to `setup` in the Rex configuration:
+
+```lua
+require("rex-agent-relay").setup{
+  finder = "fzf",
+  editor = "code --wait",
+  pager = "less -R",
+  editor_key = "ctrl+g",
+  pager_key = "ctrl+o",
+}
+```
+
+`finder`, `editor`, and `pager` are shell commands and can include arguments. The defaults are `fzf`, `$EDITOR` or `vi`, and `$PAGER` or `less -R`, respectively. Keys must be distinct `ctrl+<letter>` combinations. The letters C, D, U, W, M, J, I, and H are reserved. `setup` validates both keys.
+
+Set relay settings in your login shell's startup files:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `REX_AGENT_RELAY_FUZZY_FINDER` | `fzf` | Command used to select a kind or pane. Arguments are allowed. |
 | `REX_AGENT_RELAY_INLINE_MAX` | `20000` | Maximum relay size in bytes before writing a relay file. |
 | `REX_AGENT_RELAY_OUTBOX_DIR` | `<state directory>/outbox` | Directory for relay files. |
 

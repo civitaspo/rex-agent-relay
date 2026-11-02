@@ -126,7 +126,7 @@ local function pair_save(a, b)
 end
 local function pick(candidates)
   local result, err = rex.exec(
-    { "sh", "-c", os.getenv("REX_AGENT_RELAY_FUZZY_FINDER") or "fzf" },
+    { "sh", "-c", rex.args.finder or "fzf" },
     { stdin = table.concat(candidates, "\n") .. "\n" }
   )
   if not result then error("cannot start fuzzy finder: " .. tostring(err), 0) end
