@@ -9,6 +9,7 @@ local kinds = {
 }
 local state = (os.getenv("XDG_STATE_HOME") or (assert(os.getenv("HOME")) .. "/.local/state")) .. "/rex-agent-relay"
 local source, mode = rex.args.source, rex.args.mode or "send"
+local destination
 
 local function mkdir(path)
   local result, err = rex.exec({ "mkdir", "-p", path })
@@ -232,6 +233,7 @@ local function deliver(plan, note, kind, by)
       error("target exited before submission", 0)
     end
     write("\r")
+    destination = { session_id = pane.session_id, block_id = plan.target_id }
   else
     if not kinds[kind] then error("unknown agent kind: " .. tostring(kind), 0) end
     local command = {}
@@ -257,6 +259,7 @@ local function deliver(plan, note, kind, by)
     if not split then error(tostring(err), 0) end
     local new_id = assert(split.block_ids[1])
     pair_save(source, new_id)
+    destination = { session_id = plan.panes[source].session_id, block_id = new_id }
   end
   plan.cursors[plan.src.transcript_path] = plan.ending
   save_json(state .. "/cursors.json", plan.cursors)
@@ -356,8 +359,13 @@ end
 local function restore_focus()
   if mode ~= "send" then return end
   pcall(function()
-    local pane = panes()[source]
-    if pane then rex.session.focus_block({ session_id = pane.session_id, block_id = source }) end
+    local pane = destination or panes()[source]
+    if pane then
+      rex.session.focus_block({
+        session_id = pane.session_id,
+        block_id = destination and destination.block_id or source,
+      })
+    end
   end)
 end
 local ok, result = pcall(run)
