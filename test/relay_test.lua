@@ -229,13 +229,29 @@ assert(not located and type(locate_result) == "table" and locate_result.exit == 
 assert(searched[2] == base .. "/projects" and searched[#searched] == "moved.jsonl")
 assert(table.concat(printed, "\n"):find("user: resumed elsewhere", 1, true))
 os.remove(moved)
-rex.exec = function(argv, opts)
-  if argv[1] == "find" then return { ok = true, stdout = "" } end
-  return original_exec(argv, opts)
+for _, case in ipairs({
+  { find = { ok = true, stdout = "", stderr = "" }, exit = 2 },
+  {
+    find = { ok = false, stdout = "", stderr = "find: " .. base .. "/projects: No such file or directory\n" },
+    exit = 2,
+  },
+  {
+    find = { ok = false, stdout = "", stderr = "find: " .. base .. "/projects/locked: Permission denied\n" },
+    exit = 1,
+    message = "cannot search for the transcript: find: " .. base .. "/projects/locked: Permission denied\n",
+  },
+}) do
+  rex.exec = function(argv, opts)
+    if argv[1] == "find" then return case.find end
+    return original_exec(argv, opts)
+  end
+  local original_stderr, message = io.stderr, {}
+  io.stderr = { write = function(_, text) message[#message + 1] = text end }
+  print = function(_) end
+  os.exit = function(code) error({ exit = code }) end
+  local unlocated, unlocated_result = pcall(dofile, "rex-agent-relay/relay.lua")
+  os.exit, rex.exec, print, io.stderr = original_exit, original_exec, original_print, original_stderr
+  assert(not unlocated and type(unlocated_result) == "table" and unlocated_result.exit == case.exit)
+  assert(table.concat(message) == (case.message and "agent-relay: " .. case.message or ""))
 end
-print = function(_) end
-os.exit = function(code) error({ exit = code }) end
-local unwritten, unwritten_result = pcall(dofile, "rex-agent-relay/relay.lua")
-os.exit, rex.exec, print = original_exit, original_exec, original_print
-assert(not unwritten and type(unwritten_result) == "table" and unwritten_result.exit == 2)
 print("relay tests passed")

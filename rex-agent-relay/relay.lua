@@ -79,14 +79,19 @@ local function locate(path)
   -- elsewhere, but keeps writing to the original file, so look for it beside the other projects.
   local projects, name = path:match("^(.*)/[^/]+/([^/]+)$")
   if not projects then return path end
-  local result = rex.exec({ "find", projects, "-mindepth", "2", "-maxdepth", "2", "-type", "f", "-name", name })
-  if not result or not result.ok then return path end
+  local result, exec_err =
+    rex.exec({ "find", projects, "-mindepth", "2", "-maxdepth", "2", "-type", "f", "-name", name })
+  if not result then error("cannot search for the transcript: " .. tostring(exec_err), 0) end
   local found = {}
   for line in result.stdout:gmatch("[^\n]+") do
     found[#found + 1] = line
   end
   if #found > 1 then error("conversation has several transcripts: " .. table.concat(found, ", "), 0) end
-  return found[1] or path
+  if found[1] then return found[1] end
+  if not result.ok and not missing(result.stderr) then
+    error("cannot search for the transcript: " .. result.stderr:gsub("%s+$", ""), 0)
+  end
+  return path
 end
 local function call(method, args)
   local result, err = rex.call(method, args)
