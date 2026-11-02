@@ -1,16 +1,17 @@
 package.path = "./rex-agent-relay/?.lua;" .. package.path
 local view = require("view")
-local lines, hidden =
+local lines, hidden, cursor =
   view.render({ source = "A", target = "B", count = 2, conversation = "abc", input = "note", help = "help" }, 80, 20)
 assert(hidden == 0)
 assert(
   table.concat(lines, "\n")
     == "From: A\nTo: B  2\n\nabc\n\n───[note]"
       .. string.rep("─", 71)
-      .. "\nnote> note\n"
+      .. "\nnote\n"
       .. string.rep("─", 80)
       .. "\nhelp"
 )
+assert(cursor.row == 7 and cursor.col == 5)
 local review = view.render({ state = "review", input = "first\nsecond" }, 15, 30)
 assert(
   table
@@ -25,3 +26,9 @@ assert(omitted > 0)
 assert(#short == 3)
 local wrapped = view.render({ source = "A", target = string.rep("x", 8), conversation = "ok" }, 6, 30)
 assert(wrapped[3] == "To: xx" and wrapped[4] == "xxxxxx" and wrapped[5] == "  0")
+local _, _, wrapped_cursor = view.render({ input = "日本abc" }, 4, 30)
+assert(wrapped_cursor.col == 4)
+local _, _, clipped_cursor = view.render({ input = "hello", help = "help" }, 15, 5)
+assert(clipped_cursor.row == 3 and clipped_cursor.col == 6)
+local _, _, review_cursor = view.render({ state = "review", input = "hello" }, 15, 30)
+assert(review_cursor == nil)

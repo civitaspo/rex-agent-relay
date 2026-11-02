@@ -52,7 +52,9 @@ function M.render(model, cols, rows)
   local title = ("[note]"):sub(1, note_width - lead)
   lines[#lines + 1] = string.rep("─", lead) .. title .. string.rep("─", note_width - lead - #title)
   if model.state == "discard_armed" then add("Press Esc again to discard the note.") end
-  add(((model.state == nil or model.state == "input") and "note> " or "") .. (model.input or ""))
+  add(model.input or "")
+  local input_row = #lines
+  local input_col = width(lines[input_row]) + 1
   lines[#lines + 1] = string.rep("─", note_width)
   add(model.help or "Enter send · Esc cancel")
   local hidden = math.max(0, #lines - rows)
@@ -69,7 +71,13 @@ function M.render(model, cols, rows)
       visible[#visible + 1] = lines[i]
     end
   end
-  return visible, hidden
+  local cursor
+  if model.state == nil or model.state == "input" then
+    local first = hidden > 0 and rows > 2 and #lines - rows + 3 or hidden + 1
+    local row = input_row - first + 1 + (hidden > 0 and rows > 2 and 2 or 0)
+    if row >= 1 and row <= #visible and input_row >= first then cursor = { row = row, col = input_col } end
+  end
+  return visible, hidden, cursor
 end
 
 return M

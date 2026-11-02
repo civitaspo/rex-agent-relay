@@ -326,7 +326,7 @@ local function run()
       size_changed = size_changed,
       render = function(input)
         size_changed()
-        local lines = view.render({
+        local lines, _, cursor = view.render({
           source = label(plan.src, source),
           target = plan.target and target_label or "new " .. kind,
           count = count .. " messages, " .. #plan.parsed.files .. " files",
@@ -336,6 +336,11 @@ local function run()
           help = "Enter send  Esc cancel  " .. editor_key .. " editor  " .. pager_key .. " pager",
         }, math.max(1, cols - 1), rows)
         io.write("\27[H\27[2J" .. table.concat(lines, "\r\n"))
+        if cursor then
+          io.write("\27[" .. cursor.row .. ";" .. cursor.col .. "H\27[?25h")
+        else
+          io.write("\27[?25l")
+        end
         io.flush()
       end,
     })

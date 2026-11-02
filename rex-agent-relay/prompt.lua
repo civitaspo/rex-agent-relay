@@ -137,7 +137,7 @@ function M.run(opts)
           local file = assert(io.open(path, "wb"))
           assert(file:write(editor and state.text or opts.conversation))
           assert(file:close())
-          io.write("\27[?2004l")
+          io.write("\27[?2004l\27[?25h")
           io.flush()
           restore()
           local child_ok, child_err = pcall(
@@ -159,7 +159,7 @@ function M.run(opts)
       end
     end
   end, debug.traceback)
-  io.write("\27[?2004l")
+  io.write("\27[?2004l\27[?25h")
   io.flush()
   local restored, err = pcall(restore)
   if not ok then error(result, 0) end
