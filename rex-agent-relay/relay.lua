@@ -334,6 +334,7 @@ local function run()
           target = plan.target and target_label or "new " .. kind,
           count = count .. " messages, " .. #plan.parsed.files .. " files",
           conversation = conversation,
+          pager_key = pager_key,
           state = input.mode,
           input = input.text,
           help = "Enter send  Esc cancel  " .. editor_key .. " editor  " .. pager_key .. " pager",
@@ -373,17 +374,17 @@ if not ok then
   if mode == "send" then io.write("\27[H\27[2J") end
   io.stderr:write("agent-relay: " .. tostring(result) .. "\n")
   if mode == "send" or mode == "pair" then
-    io.write("Press Enter to close. ")
+    io.write("Press Enter or Esc to close. ")
     io.flush()
-    io.read("*l")
+    prompt.wait_close()
   end
   restore_focus()
   os.exit(1)
 end
 if result == 2 and mode == "send" then
-  io.write("\27[H\27[2JNothing to relay. Press Enter to close. ")
+  io.write("\27[H\27[2JNothing to relay. Press Enter or Esc to close. ")
   io.flush()
-  io.read("*l")
+  prompt.wait_close()
 end
 restore_focus()
 os.exit(result)

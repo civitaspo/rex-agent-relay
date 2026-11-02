@@ -18,7 +18,7 @@ assert(command[1] == "/bin/sh" and command[3]:find('"${REX_BIN_DIR:', 1, true))
 assert(command[5] == root .. "/rex-agent-relay/relay.lua")
 assert(command[6] == "source=block:source" and command[7] == "mode=send")
 assert(command[8] == "finder=fzf")
-assert(command[11] == "editor_key=ctrl+g" and command[12] == "pager_key=ctrl+o")
+assert(command[9] == "editor_key=ctrl+g" and command[10] == "pager_key=ctrl+o" and #command == 10)
 module.setup({
   key = false,
   finder = "fzf --reverse",
@@ -29,8 +29,8 @@ module.setup({
 })
 actions.agent_relay.run({ block_id = "block:source" })
 command = layer.layout.options.command
-assert(command[8] == "finder=fzf --reverse" and command[9] == "editor=code --wait")
-assert(command[10] == "pager=less -R" and command[11] == "editor_key=ctrl+a" and command[12] == "pager_key=ctrl+b")
+assert(command[8] == "finder=fzf --reverse" and command[9] == "editor_key=ctrl+a")
+assert(command[10] == "pager_key=ctrl+b" and command[11] == "editor=code --wait" and command[12] == "pager=less -R")
 for _, name in ipairs({
   "ctrl+c",
   "ctrl+d",

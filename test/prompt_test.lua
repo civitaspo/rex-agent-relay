@@ -54,5 +54,14 @@ test_io.write, test_io.flush = function() end, function() end
 local submitted = prompt.run({ editor = "fake-editor", keys = { open_editor = 7 }, render = function() end })
 rex.exec, test_io.read, test_io.write, test_io.flush = real_exec, real_read, real_write, real_flush
 assert(submitted.action == "submit" and submitted.text == "x")
+local commands, keys = {}, { "a", "\27" }
+rex.exec = function(args)
+  commands[#commands + 1] = args[3]
+  return { ok = true, stdout = "settings\n" }
+end
+test_io.read = function() return table.remove(keys, 1) end
+prompt.wait_close()
+rex.exec, test_io.read = real_exec, real_read
+assert(#commands == 3 and commands[2]:find("-icanon", 1, true) and commands[3]:find("$1", 1, true))
 
 print("prompt tests passed")

@@ -38,5 +38,15 @@ local long, hidden_long = view.render(
   80,
   10
 )
-assert(long[1] == "From: A" and long[2] == "To: B  2" and long[3]:find("lines hidden", 1, true))
+assert(long[1] == "From: A" and long[2] == "To: B  2" and long[3]:find("hidden", 1, true))
 assert(hidden_long > 0 and #long == 10)
+
+local _, _, punctuation = view.render({ input = "’“…”→日本" }, 80, 20)
+assert(punctuation.col == 10)
+local tabs = view.render({ conversation = "a\tb" }, 4, 30)
+assert(table.concat(tabs, "\n"):find("a   \n    \nb", 1, true))
+local empty = view.render({ conversation = "" }, 80, 20)
+assert(table.concat(empty, "\n"):find("No new conversation since last relay", 1, true))
+local colored = view.render({ conversation = "user: hello\n\nclaude: hi" }, 80, 20)
+assert(table.concat(colored, "\n"):find("\27[36muser:\27[0m hello", 1, true))
+assert(long[3]:find("ctrl+o pager", 1, true))

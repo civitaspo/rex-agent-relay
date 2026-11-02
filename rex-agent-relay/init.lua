@@ -11,26 +11,27 @@ local function key(name, field)
   return name, byte
 end
 local function open(ctx, mode, config)
+  local command = {
+    "/bin/sh",
+    "-c",
+    'saved=$(/bin/stty -g </dev/tty) || exit 1; trap \'/bin/stty "$saved" </dev/tty\' EXIT HUP INT TERM; "${REX_BIN_DIR:?REX_BIN_DIR is not set}/rex" do "$@"',
+    "rex-agent-relay",
+    dir .. "/relay.lua",
+    "source=" .. ctx.block_id,
+    "mode=" .. mode,
+    "finder=" .. config.finder,
+    "editor_key=" .. config.editor_key,
+    "pager_key=" .. config.pager_key,
+  }
+  if config.editor then command[#command + 1] = "editor=" .. config.editor end
+  if config.pager then command[#command + 1] = "pager=" .. config.pager end
   local _, err = rex.session.new_layer({
     bounds = { 0.05, 0.05, 0.90, 0.90 },
     focus = true,
     layout = rex.layout.block({
       flavor = "com.superlogical.terminal.shell",
       options = {
-        command = {
-          "/bin/sh",
-          "-c",
-          'saved=$(/bin/stty -g </dev/tty) || exit 1; trap \'/bin/stty "$saved" </dev/tty\' EXIT HUP INT TERM; "${REX_BIN_DIR:?REX_BIN_DIR is not set}/rex" do "$@"',
-          "rex-agent-relay",
-          dir .. "/relay.lua",
-          "source=" .. ctx.block_id,
-          "mode=" .. mode,
-          "finder=" .. config.finder,
-          "editor=" .. config.editor,
-          "pager=" .. config.pager,
-          "editor_key=" .. config.editor_key,
-          "pager_key=" .. config.pager_key,
-        },
+        command = command,
       },
     }),
   })
@@ -41,14 +42,17 @@ function M.setup(opts)
   local config = {}
   for field, fallback in pairs({
     finder = "fzf",
-    editor = os.getenv("EDITOR") or "vi",
-    pager = os.getenv("PAGER") or "less -R",
     editor_key = "ctrl+g",
     pager_key = "ctrl+o",
   }) do
     local value = opts[field]
     if value == nil then value = fallback end
     if type(value) ~= "string" or value == "" then error("invalid " .. field, 0) end
+    config[field] = value
+  end
+  for _, field in ipairs({ "editor", "pager" }) do
+    local value = opts[field]
+    if value ~= nil and (type(value) ~= "string" or value == "") then error("invalid " .. field, 0) end
     config[field] = value
   end
   local _, ek = key(config.editor_key, "editor_key")

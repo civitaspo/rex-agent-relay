@@ -100,6 +100,21 @@ local function command(args)
   return result.stdout or ""
 end
 
+function M.wait_close()
+  local old = command({ "sh", "-c", "/bin/stty -g </dev/tty" }):match("%S+")
+  assert(old, "cannot read terminal settings")
+  local ok, err = pcall(function()
+    command({ "sh", "-c", "/bin/stty -echo -icanon min 1 time 0 </dev/tty" })
+    while true do
+      local byte = io.read(1)
+      if not byte or byte == "\27" or byte == "\r" or byte == "\n" then break end
+    end
+  end)
+  local restored, restore_err = pcall(command, { "sh", "-c", '/bin/stty "$1" </dev/tty', "sh", old })
+  if not ok then error(err, 0) end
+  if not restored then error(restore_err, 0) end
+end
+
 function M.run(opts)
   local old = command({ "sh", "-c", "/bin/stty -g </dev/tty" }):match("%S+")
   assert(old, "cannot read terminal settings")

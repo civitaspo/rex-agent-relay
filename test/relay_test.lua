@@ -146,10 +146,12 @@ local retry_ok, retry_result = pcall(dofile, "rex-agent-relay/relay.lua")
 os.exit, io.read = original_exit, original_read
 assert(not retry_ok and retry_result.exit == 0)
 rex.args = { mode = "send", source = "block:missing" }
+local original_wait_close = prompt.wait_close
+prompt.wait_close = function() error({ waiting = true }) end
 os.exit = function(code) error({ exit = code }) end
 io.read = function() error({ waiting = true }) end
 local ui_ok, ui_result = pcall(dofile, "rex-agent-relay/relay.lua")
-os.exit, io.read = original_exit, original_read
+os.exit, io.read, prompt.wait_close = original_exit, original_read, original_wait_close
 assert(not ui_ok and type(ui_result) == "table" and ui_result.waiting)
 local original_open = io.open
 io.open = function(path, mode)
