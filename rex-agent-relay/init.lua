@@ -12,7 +12,7 @@ local function key(name, field)
 end
 local function open(ctx, mode, config)
   local _, err = rex.session.new_layer({
-    bounds = { 0.15, 0.30, 0.70, 0.40 },
+    bounds = { 0.05, 0.05, 0.90, 0.90 },
     focus = true,
     layout = rex.layout.block({
       flavor = "com.superlogical.terminal.shell",
@@ -20,7 +20,7 @@ local function open(ctx, mode, config)
         command = {
           "/bin/sh",
           "-c",
-          'exec "${REX_BIN_DIR:?REX_BIN_DIR is not set}/rex" do "$@"',
+          'saved=$(/bin/stty -g </dev/tty) || exit 1; trap \'/bin/stty "$saved" </dev/tty\' EXIT HUP INT TERM; "${REX_BIN_DIR:?REX_BIN_DIR is not set}/rex" do "$@"',
           "rex-agent-relay",
           dir .. "/relay.lua",
           "source=" .. ctx.block_id,
