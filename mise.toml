@@ -1,5 +1,5 @@
 [tools]
-"aqua:ast-grep/ast-grep" = "0.51.0"
+"aqua:ast-grep/ast-grep" = "0.51.1"
 "aqua:JohnnyMorganz/StyLua" = "2.6.0"
 "aqua:Kampfkarren/selene" = "0.32.0"
 "aqua:jdx/jactionlint" = "2.4.0"
