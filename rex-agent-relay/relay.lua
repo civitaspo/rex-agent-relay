@@ -68,6 +68,26 @@ local function agent(id)
   end
   return value
 end
+local function locate(path)
+  local f, err, code = io.open(path, "rb")
+  if f then
+    f:close()
+    return path
+  end
+  if not missing(err, code) then error(err, 0) end
+  -- Claude Code reports a transcript path built from the new working directory when a conversation resumes
+  -- elsewhere, but keeps writing to the original file, so look for it beside the other projects.
+  local projects, name = path:match("^(.*)/[^/]+/([^/]+)$")
+  if not projects then return path end
+  local result = rex.exec({ "find", projects, "-mindepth", "2", "-maxdepth", "2", "-type", "f", "-name", name })
+  if not result or not result.ok then return path end
+  local found = {}
+  for line in result.stdout:gmatch("[^\n]+") do
+    found[#found + 1] = line
+  end
+  if #found > 1 then error("conversation has several transcripts: " .. table.concat(found, ", "), 0) end
+  return found[1] or path
+end
 local function call(method, args)
   local result, err = rex.call(method, args)
   if not result then error(tostring(err), 0) end
@@ -117,6 +137,7 @@ local function source_agent(all)
       0
     )
   end
+  registered.transcript_path = locate(registered.transcript_path)
   return registered
 end
 local function pair_save(a, b)
