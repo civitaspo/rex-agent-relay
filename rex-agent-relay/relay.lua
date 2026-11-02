@@ -306,18 +306,26 @@ local function run()
     end
     local conversation = transcript.conversation(plan.parsed, plan.cwd)
     local editor_key, pager_key = rex.args.editor_key or "ctrl+g", rex.args.pager_key or "ctrl+o"
+    local rows, cols = 24, 80
+    local function size_changed()
+      local size = rex.exec({ "sh", "-c", "/bin/stty size </dev/tty" })
+      local height, width
+      if size and size.stdout then
+        height, width = size.stdout:match("(%d+)%s+(%d+)")
+      end
+      height, width = tonumber(height) or 24, tonumber(width) or 80
+      local changed = height ~= rows or width ~= cols
+      rows, cols = height, width
+      return changed
+    end
     local choice = prompt.run({
       editor = rex.args.editor or os.getenv("EDITOR") or "vi",
       pager = rex.args.pager or os.getenv("PAGER") or "less -R",
       conversation = conversation,
       keys = { open_editor = prompt.control(editor_key), open_pager = prompt.control(pager_key) },
+      size_changed = size_changed,
       render = function(input)
-        local size = rex.exec({ "sh", "-c", "/bin/stty size </dev/tty" })
-        local rows, cols
-        if size and size.stdout then
-          rows, cols = size.stdout:match("(%d+)%s+(%d+)")
-        end
-        rows, cols = tonumber(rows) or 24, tonumber(cols) or 80
+        size_changed()
         local lines = view.render({
           source = label(plan.src, source),
           target = plan.target and target_label or "new " .. kind,

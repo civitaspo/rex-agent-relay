@@ -47,9 +47,11 @@ function M.render(model, cols, rows)
   add("")
   add(model.conversation or "No conversation")
   add("")
-  if model.state == "review" then add("Review note:") end
+  local note_width = math.max(1, cols)
+  add(("---[note]" .. string.rep("-", note_width)):sub(1, note_width))
   if model.state == "discard_armed" then add("Press Esc again to discard the note.") end
   add(((model.state == nil or model.state == "input") and "note> " or "") .. (model.input or ""))
+  add(string.rep("-", note_width))
   add(model.help or "Enter send · Esc cancel")
   local hidden = math.max(0, #lines - rows)
   local visible = {}

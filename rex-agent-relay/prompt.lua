@@ -109,13 +109,22 @@ function M.run(opts)
     raw()
     io.write("\27[?2004h")
     io.flush()
-    local dirty = true
+    local dirty, idle = true, 0
     while true do
       if dirty then
         opts.render(state)
         dirty = false
       end
       local byte = io.read(1)
+      if byte then
+        idle = 0
+      else
+        idle = idle + 1
+        if idle >= 10 then
+          idle = 0
+          if opts.size_changed and opts.size_changed() then dirty = true end
+        end
+      end
       for _, event in ipairs(decode(byte)) do
         dirty = true
         local action
