@@ -197,4 +197,61 @@ os.exit = function(code) error({ exit = code }) end
 local paired, pair_result = pcall(dofile, "rex-agent-relay/relay.lua")
 os.exit, rex.exec = original_exit, original_exec
 assert(not paired and type(pair_result) == "table" and pair_result.exit == 0)
+assert(rex.exec({ "mkdir", "-p", base .. "/projects/original" }).ok)
+local moved = base .. "/projects/original/moved.jsonl"
+write(moved, '{"type":"user","cwd":"/work","message":{"content":"resumed elsewhere"}}\n')
+write(
+  base .. "/agents/" .. source:sub(7) .. ".json",
+  rex.json.encode({
+    agent = "claude",
+    block_id = source,
+    pid = 101,
+    cwd = "/work",
+    transcript_path = base .. "/projects/worktree/moved.jsonl",
+    session_id = "moved",
+  })
+)
+local searched
+rex.exec = function(argv, opts)
+  if argv[1] == "find" then
+    searched = argv
+    return { ok = true, stdout = moved .. "\n" }
+  end
+  return original_exec(argv, opts)
+end
+local original_print, printed = print, {}
+print = function(text) printed[#printed + 1] = text end
+rex.args = { mode = "peek", source = source }
+os.exit = function(code) error({ exit = code }) end
+local located, locate_result = pcall(dofile, "rex-agent-relay/relay.lua")
+os.exit, rex.exec, print = original_exit, original_exec, original_print
+assert(not located and type(locate_result) == "table" and locate_result.exit == 0)
+assert(searched[2] == base .. "/projects" and searched[#searched] == "moved.jsonl")
+assert(table.concat(printed, "\n"):find("user: resumed elsewhere", 1, true))
+os.remove(moved)
+for _, case in ipairs({
+  { find = { ok = true, stdout = "", stderr = "" }, exit = 2 },
+  {
+    find = { ok = false, stdout = "", stderr = "find: " .. base .. "/projects: No such file or directory\n" },
+    exit = 2,
+  },
+  {
+    find = { ok = false, stdout = "", stderr = "find: " .. base .. "/projects/locked: Permission denied\n" },
+    exit = 1,
+    message = "cannot search for the transcript: find: " .. base .. "/projects/locked: Permission denied\n",
+  },
+}) do
+  rex.exec = function(argv, opts)
+    if argv[1] == "find" then return case.find end
+    return original_exec(argv, opts)
+  end
+  local original_stderr, message = io.stderr, {}
+  io.stderr = { write = function(_, text) message[#message + 1] = text end }
+  print = function(_) end
+  os.exit = function(code) error({ exit = code }) end
+  local unlocated, unlocated_result = pcall(dofile, "rex-agent-relay/relay.lua")
+  os.exit, rex.exec, print, io.stderr = original_exit, original_exec, original_print, original_stderr
+  assert(not unlocated and type(unlocated_result) == "table" and unlocated_result.exit == case.exit)
+  assert(table.concat(message) == (case.message and "agent-relay: " .. case.message or ""))
+end
 print("relay tests passed")
