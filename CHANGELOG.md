@@ -2,7 +2,29 @@
 
 All notable changes to this project are documented in this file.
 
-## [0.1.0] - 2026-11-01
+## [1.0.0] - 2026-11-03
+
+### 🚀 Features
+
+- [**breaking**] feat!: configure relay window in setup ([#23](https://github.com/civitaspo/rex-agent-relay/pull/23))
+- feat: add interactive relay window ([#25](https://github.com/civitaspo/rex-agent-relay/pull/25))
+
+### 🐛 Bug Fixes
+
+- fix: find a Claude transcript that stayed behind after a resume ([#26](https://github.com/civitaspo/rex-agent-relay/pull/26))
+
+### 📚 Documentation
+
+- docs: describe relay send without key binding in intro ([#20](https://github.com/civitaspo/rex-agent-relay/pull/20))
+- docs: define Relay window in the glossary ([#27](https://github.com/civitaspo/rex-agent-relay/pull/27))
+
+### ⚙️ Maintenance
+
+- chore(deps): update dependency aqua:ast-grep/ast-grep to v0.51.1 ([#21](https://github.com/civitaspo/rex-agent-relay/pull/21))
+- chore(deps): update dependency github:github/gh-actions-lock to v0.4.1 ([#28](https://github.com/civitaspo/rex-agent-relay/pull/28))
+- chore(deps): update jdx/mise-action action to v5.2.6 ([#29](https://github.com/civitaspo/rex-agent-relay/pull/29))
+
+## [0.1.0] - 2026-11-02
 
 ### 🚀 Features
 
