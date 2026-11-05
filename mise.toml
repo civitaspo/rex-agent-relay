@@ -2,7 +2,7 @@
 "aqua:ast-grep/ast-grep" = "0.51.1"
 "aqua:JohnnyMorganz/StyLua" = "2.6.0"
 "aqua:Kampfkarren/selene" = "0.32.0"
-"aqua:jdx/jactionlint" = "2.4.0"
+"aqua:jdx/jactionlint" = "2.5.0"
 "aqua:koalaman/shellcheck" = "0.11.0"
 "aqua:suzuki-shunsuke/disable-checkout-persist-credentials" = "1.0.2"
 "aqua:suzuki-shunsuke/ghalint" = "1.6.0"
