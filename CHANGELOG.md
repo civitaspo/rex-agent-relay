@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.0.1] - 2026-11-06
+
+### ⚙️ Maintenance
+
+- chore(deps): update dependency jdx/mise to v2026.11.0 ([#30](https://github.com/civitaspo/rex-agent-relay/pull/30))
+- chore(deps): update dependency jdx/mise to v2026.11.1 ([#32](https://github.com/civitaspo/rex-agent-relay/pull/32))
+- chore(deps): update dependency aqua:jdx/jactionlint to v2.5.0 ([#35](https://github.com/civitaspo/rex-agent-relay/pull/35))
+- chore(deps): update amannn/action-semantic-pull-request action to v6.1.2 ([#33](https://github.com/civitaspo/rex-agent-relay/pull/33))
+- chore(deps): update dependency jdx/mise to v2026.11.2 ([#34](https://github.com/civitaspo/rex-agent-relay/pull/34))
+- chore(deps): update dependency jdx/mise to v2026.11.3 ([#36](https://github.com/civitaspo/rex-agent-relay/pull/36))
+
 ## [1.0.0] - 2026-11-03
 
 ### 🚀 Features
