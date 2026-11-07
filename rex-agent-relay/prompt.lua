@@ -1,4 +1,5 @@
 local M = {}
+local view = require("view")
 local controls = {
   [127] = "backspace",
   [8] = "backspace",
@@ -115,6 +116,52 @@ function M.wait_close()
   if not restored then error(restore_err, 0) end
 end
 
+local function gum_available()
+  local result = rex.exec({ "sh", "-c", "command -v gum >/dev/null 2>&1" })
+  if not result then error("cannot check for gum", 0) end
+  if result.ok then return true end
+  if result.code == 1 then return false end
+  error("gum availability check failed with status " .. tostring(result.code), 0)
+end
+
+local function gum_input(opts)
+  if opts.conversation ~= "" then
+    local result, err = rex.exec({ "sh", "-c", "gum pager >/dev/tty 2>/dev/tty", "sh" }, {
+      stdin = view.display(opts.header)
+        .. "\n\nClose the pager to write a note. Ctrl+C cancels the relay.\n\n"
+        .. view.display(opts.conversation),
+    })
+    if not result then error(tostring(err or "gum pager failed to launch"), 0) end
+    if result.code == 130 then return { action = "cancel" } end
+    if not result.ok then
+      error(
+        tostring(
+          err or result.stderr ~= "" and result.stderr or ("gum pager failed with status " .. tostring(result.code))
+        ),
+        0
+      )
+    end
+  end
+  local result, err = rex.exec({
+    "sh",
+    "-c",
+    'gum write --char-limit=0 --header "$1" </dev/tty 2>/dev/tty',
+    "sh",
+    view.display(opts.header) .. "\nEnter sends. Esc cancels.",
+  })
+  if not result then error(tostring(err or "gum write failed"), 0) end
+  if result.code == 1 or result.code == 130 then return { action = "cancel" } end
+  if not result.ok then
+    error(
+      tostring(
+        err or result.stderr ~= "" and result.stderr or ("gum write failed with status " .. tostring(result.code))
+      ),
+      0
+    )
+  end
+  return { action = "submit", text = (result.stdout or ""):gsub("\n$", "") }
+end
+
 function M.run(opts)
   local old = command({ "sh", "-c", "/bin/stty -g </dev/tty" }):match("%S+")
   assert(old, "cannot read terminal settings")
@@ -123,6 +170,7 @@ function M.run(opts)
   local state = { mode = "input", text = "" }
   local decode = M.decoder(opts.keys)
   local ok, result = xpcall(function()
+    if gum_available() then return gum_input(opts) end
     raw()
     io.write("\27[?2004h")
     io.flush()

@@ -1,5 +1,7 @@
 local M = {}
 
+function M.display(text) return (tostring(text or ""):gsub("[%z\1-\8\11-\31\127]", "?")) end
+
 local function width(text)
   -- shortcut: common Unicode widths; use grapheme-aware terminal widths for complex emoji sequences.
   local columns, i = 0, 1
@@ -67,7 +69,7 @@ end
 function M.render(model, cols, rows)
   local lines = {}
   local function add(text)
-    text = tostring(text or ""):gsub("[%z\1-\8\11-\31\127]", "?")
+    text = M.display(text)
     for _, line in ipairs(wrap(text, math.max(1, cols))) do
       lines[#lines + 1] = line
     end
