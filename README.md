@@ -52,9 +52,11 @@ To update, pull the repository and run `rex config reload`. You can manage the c
 
 ## Send a relay
 
-Focus an agent pane and press `cmd+shift+r`, or run **Agent Relay: Send** from the command palette. If no live pair exists, select an agent kind to start beside the source. The Relay window opens. It shows the conversation and accepts a note. Press Enter to send or Esc to cancel. An empty note is allowed when the conversation has changed.
+Focus an agent pane and press `cmd+shift+r`, or run **Agent Relay: Send** from the command palette. If no live pair exists, select an agent kind to start beside the source. The Relay window opens. It shows the conversation and accepts a note. An empty note is allowed when the conversation has changed.
 
-Press `ctrl+g` to edit a multiline note in your editor. After you return, press Enter to send it or Esc twice to discard it. Press `ctrl+o` to read the conversation in your pager. Both keys can be changed in `setup`.
+When `gum` is available on `PATH`, Relay opens the conversation in `gum pager`. Close the pager to write a note, or press `ctrl+c` to cancel. Relay skips the pager when there is no new conversation. The note opens in `gum write`, which supports multiline input and paste. Follow its on-screen key guide. In Gum v2.0.2, `ctrl+j` inserts a newline, `ctrl+e` opens an editor, Enter sends, and Esc or `ctrl+c` cancels.
+
+Without Gum, Relay uses its built-in input. Press Enter to send or Esc to cancel. Press `ctrl+g` to edit a multiline note in your editor. After you return, press Enter to send or Esc twice to discard it. Press `ctrl+o` to read the conversation in your pager. Both keys can be changed in `setup`.
 
 Use **Agent Relay: Change Pair** to pair the source with an existing agent pane, including one in another Rex session. Each pane belongs to one pair. A new pair replaces each pane's old pair.
 
@@ -112,6 +114,8 @@ require("rex-agent-relay").setup{
 
 `finder`, `editor`, and `pager` are shell commands and can include arguments. The defaults are `fzf`, `$EDITOR` or `vi`, and `$PAGER` or `less -R`, respectively. Keys must be distinct `ctrl+<letter>` combinations. The letters C, D, U, W, M, J, I, and H are reserved. `setup` validates both keys.
 
+`editor`, `pager`, `editor_key`, and `pager_key` apply to the built-in input. Gum uses its own key bindings and editor selection.
+
 Set relay settings in your login shell's startup files:
 
 | Variable | Default | Purpose |
@@ -126,7 +130,7 @@ For long relays, the target receives the file path and a summary of changed file
 - Changed files come from Claude's editing tools and Codex `FileChange` records. Shell commands that change files are not included.
 - The relay reads complete JSONL lines only. Transcript formats and Rex Beta APIs may change.
 - Only panes on the same Rex server are supported. Rex cannot move a pane between sessions.
-- The input field accepts one line. Use the editor for a multiline note.
+- Without Gum, the built-in input accepts one line. Use the editor for a multiline note.
 - Do not run concurrent relays against the same state directory. Pair and relay point updates are not synchronized across processes.
 - Rex queues terminal writes. The agent may exit between a foreground check and receipt of the text. Check the target before retrying a failed relay because a failed submission may already have pasted text.
 - A new pane receives the relay at startup, so its relay point advances when Rex creates the pane. If the agent fails to start, close the pane and stop other relays. Back up `<state directory>/cursors.json`, find the source's `transcript_path` in `<state directory>/agents/<source block ID without block:>.json`, and remove only that path's entry from `cursors.json`. If no file exists at that path, use the path of the file with the same name under `~/.claude/projects` instead. Retry the relay; this resends the entire transcript, including any previously relayed conversation. An open paired pane with no supported foreground agent blocks further relays until its agent starts or the pane is closed.

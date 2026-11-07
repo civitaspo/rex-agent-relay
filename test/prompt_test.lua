@@ -35,11 +35,88 @@ assert(state.mode == "discard_armed" and not result)
 state, result = prompt.transition(state, { type = "escape" })
 assert(result.action == "cancel")
 local test_io = io
-local real_exec, real_read, real_write, real_flush = rex.exec, io.read, io.write, io.flush
+local real_exec, gum_write, gum_flush = rex.exec, test_io.write, test_io.flush
+test_io.write, test_io.flush = function() end, function() end
+local calls = {}
+local gum_exec
+local terminal = "settings"
+rex.exec = function(args, opts)
+  if args[3] == "/bin/stty -g </dev/tty" then return { ok = true, stdout = terminal .. "\n" } end
+  if args[3] == '/bin/stty "$1" </dev/tty' then
+    terminal = args[5]
+    return { ok = true }
+  end
+  return gum_exec(args, opts)
+end
+gum_exec = function(args, opts)
+  calls[#calls + 1] = { args = args, opts = opts }
+  if #calls == 1 then return { ok = true } end
+  if #calls == 2 then return { ok = true } end
+  return { ok = true, code = 0, stdout = "一行目  \n二行目\n\n" }
+end
+result = prompt.run({ conversation = "user: hello\27[31m\n", header = "From: source\27", render = function() end })
+assert(result.action == "submit" and result.text == "一行目  \n二行目\n")
+assert(calls[2].opts.stdin:find("Close the pager to write a note. Ctrl+C cancels the relay.", 1, true))
+assert(calls[2].opts.stdin:find("user: hello?[31m\n", 1, true) and calls[2].args[3]:find("gum pager", 1, true))
+assert(calls[3].args[3]:find("gum write --char-limit=0", 1, true))
+assert(calls[3].args[5] == "From: source?\nEnter sends. Esc cancels.")
+for _, call in ipairs(calls) do
+  for _, arg in ipairs(call.args) do
+    assert(type(arg) == "string")
+  end
+end
+calls = {}
+gum_exec = function(args, opts)
+  calls[#calls + 1] = { args = args, opts = opts }
+  if #calls == 1 then return { ok = true } end
+  return { ok = true, code = 0, stdout = "\n" }
+end
+result = prompt.run({ conversation = "", header = "header", render = function() end })
+assert(result.action == "submit" and result.text == "" and #calls == 2)
+calls = {}
+gum_exec = function(args, opts)
+  calls[#calls + 1] = { args = args, opts = opts }
+  if #calls == 1 then return { ok = true } end
+  return { ok = false, code = 1, stderr = "not submitted" }
+end
+assert(prompt.run({ conversation = "", header = "header" }).action == "cancel")
+calls = {}
+gum_exec = function(args, opts)
+  calls[#calls + 1] = { args = args, opts = opts }
+  if #calls == 1 then return { ok = true } end
+  return { ok = false, code = 2, stderr = "failure" }
+end
+assert(not pcall(prompt.run, { conversation = "", header = "header" }))
+calls = {}
+gum_exec = function(args, opts)
+  calls[#calls + 1] = { args = args, opts = opts }
+  if #calls == 1 then return { ok = true } end
+  return { ok = false, code = 2, stderr = "pager failed" }
+end
+assert(not pcall(prompt.run, { conversation = "conversation", header = "header" }) and #calls == 2)
+calls = {}
+gum_exec = function(args, opts)
+  calls[#calls + 1] = { args = args, opts = opts }
+  if #calls == 1 then return { ok = true } end
+  terminal = "raw"
+  return { ok = false, code = 130, stderr = "" }
+end
+assert(prompt.run({ conversation = "conversation", header = "header" }).action == "cancel" and #calls == 2)
+assert(terminal == "settings", "pager cancellation must restore the terminal")
+calls = {}
+gum_exec = function(args, opts)
+  calls[#calls + 1] = { args = args, opts = opts }
+  if #calls == 1 then return { ok = true } end
+  return nil, "launch failed"
+end
+assert(not pcall(prompt.run, { conversation = "", header = "header" }))
+rex.exec, test_io.write, test_io.flush = real_exec, gum_write, gum_flush
+local real_read, real_write, real_flush = io.read, io.write, io.flush
 local bytes = { "x", "\7", "\r" }
 local temp_path = os.getenv("TMPDIR") or "/tmp"
 temp_path = temp_path .. "/rex-prompt-test"
 rex.exec = function(args)
+  if args[3] and args[3]:find("command %-v gum") then return { ok = false, code = 1 } end
   if args[1] == "mktemp" then return { ok = true, stdout = temp_path .. "\n" } end
   if args[1] == "sh" and args[3]:find("fake%-editor") then
     local f = assert(io.open(temp_path, "wb"))
