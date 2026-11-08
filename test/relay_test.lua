@@ -111,16 +111,21 @@ assert(saved_pairs[source] == "block:new" and cursors[log] == #first + #later)
 write(base .. "/pairs.json", "{}")
 local real_exec = rex.exec
 rex.exec = function(args, opts)
-  if args[1] == "sh" then return { ok = true, stdout = "codex\tcodex\n" } end
+  if args[1] == "sh" then return { ok = true, stdout = "codex\n" } end
   return real_exec(args, opts)
 end
-prompt.run = function() return { action = "submit", text = "test" } end
+local new_header
+prompt.run = function(opts)
+  new_header = opts.header
+  return { action = "submit", text = "test" }
+end
 focused = nil
 rex.args = { mode = "send", source = source }
 os.exit = function(code) error({ exit = code }) end
 local new_sent, new_result = pcall(dofile, "rex-agent-relay/relay.lua")
 os.exit, rex.exec, prompt.run = original_exit, real_exec, original_prompt
 assert(not new_sent and new_result.exit == 0 and focused.session_id == "s1" and focused.block_id == "block:new")
+assert(new_header:find("To: new codex", 1, true))
 
 local original_call = rex.call
 rex.call = function(method, args)
