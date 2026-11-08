@@ -17,7 +17,9 @@ See the [glossary](docs/GLOSSARY.md) for the terms used here.
 
 - Rex Beta. Its terminals provide `REX_BIN_DIR`, which the Relay window uses to find `rex`. To run the examples from another terminal, add the `rex` CLI to your `PATH` or use its absolute path.
 - Claude Code and Codex with SessionStart hooks enabled. Start Codex sources with `codex --no-daemon` so the hook receives the pane environment.
-- `fzf`, or another fuzzy finder that reads candidates from stdin and writes the selected line to stdout.
+- [fzf](https://github.com/junegunn/fzf) on `PATH` for selecting an agent. You can configure another fuzzy finder that reads candidates from stdin and writes the selected line to stdout with the `finder` option.
+
+Optional: install [gum](https://github.com/charmbracelet/gum) on `PATH` to view conversations and write multiline notes. Without it, Relay uses its built-in input.
 
 ## Install
 
