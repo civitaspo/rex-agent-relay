@@ -1,6 +1,9 @@
 local M = {}
 
-function M.display(text) return (tostring(text or ""):gsub("[%z\1-\8\11-\31\127]", "?")) end
+function M.display(text)
+  local display = tostring(text or ""):gsub("\194[\128-\159]", "?")
+  return (display:gsub("[%z\1-\8\11-\31\127]", "?"))
+end
 
 local function width(text)
   -- shortcut: common Unicode widths; use grapheme-aware terminal widths for complex emoji sequences.

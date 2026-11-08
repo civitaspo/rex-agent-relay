@@ -331,7 +331,7 @@ local function run()
       local other = plan.src.agent == "claude" and "codex" or "claude"
       local selection = pick({ other .. "\t" .. other, plan.src.agent .. "\t" .. plan.src.agent })
       if not selection then return 1 end
-      kind = selection:match("\t([^\t]+)$")
+      kind = selection:match("\t([^\t]+)$") or other
     end
     local conversation = transcript.conversation(plan.parsed, plan.cwd)
     local editor_key, pager_key = rex.args.editor_key or "ctrl+g", rex.args.pager_key or "ctrl+o"
