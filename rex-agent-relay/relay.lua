@@ -331,7 +331,7 @@ local function run()
       local other = plan.src.agent == "claude" and "codex" or "claude"
       local selection = pick({ other .. "\t" .. other, plan.src.agent .. "\t" .. plan.src.agent })
       if not selection then return 1 end
-      kind = selection:match("\t([^\t]+)$")
+      kind = selection:match("\t([^\t]+)$") or other
     end
     local conversation = transcript.conversation(plan.parsed, plan.cwd)
     local editor_key, pager_key = rex.args.editor_key or "ctrl+g", rex.args.pager_key or "ctrl+o"
@@ -351,6 +351,11 @@ local function run()
       editor = rex.args.editor or os.getenv("EDITOR") or "vi",
       pager = rex.args.pager or os.getenv("PAGER") or "less -R",
       conversation = conversation,
+      header = table.concat({
+        "From: " .. label(plan.src, source),
+        "To: " .. (plan.target and target_label or "new " .. kind),
+        count .. " messages, " .. #plan.parsed.files .. " files",
+      }, "\n"),
       keys = { open_editor = prompt.control(editor_key), open_pager = prompt.control(pager_key) },
       size_changed = size_changed,
       render = function(input)

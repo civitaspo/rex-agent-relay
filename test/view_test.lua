@@ -50,3 +50,4 @@ assert(table.concat(empty, "\n"):find("No new conversation since last relay", 1,
 local colored = view.render({ conversation = "user: hello\n\nclaude: hi" }, 80, 20)
 assert(table.concat(colored, "\n"):find("\27[36muser:\27[0m hello", 1, true))
 assert(long[3]:find("ctrl+o pager", 1, true))
+assert(view.display("日本\194\15531m") == "日本?31m")
