@@ -2,6 +2,22 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.1.1] - 2026-11-13
+
+### 📚 Documentation
+
+- docs: clarify interactive input dependencies ([#41](https://github.com/civitaspo/rex-agent-relay/pull/41))
+
+### ⚙️ Maintenance
+
+- chore(deps): update jdx/mise-action action to v5.2.7 ([#37](https://github.com/civitaspo/rex-agent-relay/pull/37))
+- chore(deps): update dependency jdx/mise to v2026.11.4 ([#39](https://github.com/civitaspo/rex-agent-relay/pull/39))
+- chore(deps): update dependency jdx/mise to v2026.11.5 ([#42](https://github.com/civitaspo/rex-agent-relay/pull/42))
+- chore(deps): update jdx/mise-action action to v5.2.8 ([#47](https://github.com/civitaspo/rex-agent-relay/pull/47))
+- chore(deps): update dependency aqua:ast-grep/ast-grep to v0.51.2 ([#46](https://github.com/civitaspo/rex-agent-relay/pull/46))
+- chore(deps): update dependency jdx/mise to v2026.11.7 ([#45](https://github.com/civitaspo/rex-agent-relay/pull/45))
+- chore(deps): update civitaspo/csm-ci-actions action to v0.7.0 ([#43](https://github.com/civitaspo/rex-agent-relay/pull/43))
+
 ## [1.1.0] - 2026-11-08
 
 ### 🚀 Features
