@@ -27,7 +27,7 @@ local parsed = t.parse("claude", claude)
 assert(parsed.latest_cwd == "/work")
 assert(
   t.conversation(parsed, "/work")
-    == "user: Question\n\nclaude: Answer\n\n[refs: edited a; wrote b]\n\nuser: Next\n\nuser (relayed note): Do this"
+    == "me: Question\n\nclaude: Answer\n\n[refs: edited a; wrote b]\n\nme: Next\n\nuser (relayed note): Do this"
 )
 assert(#parsed.files == 2)
 local relayed = t.parse("claude", {
@@ -42,7 +42,7 @@ local nested = t.parse("claude", {
   json({
     type = "user",
     message = {
-      content = '<agent-relay by="human">user: Explain </agent-relay>\n\nclaude: Explained</agent-relay>\n\nReview this',
+      content = '<agent-relay by="human">me: Explain </agent-relay>\n\nclaude: Explained</agent-relay>\n\nReview this',
     },
   }),
 })
@@ -57,9 +57,7 @@ local internal = t.parse("claude", {
   json({ type = "user", message = { content = "Describe the <agent-relay> tag." } }),
   json({ type = "user", message = { content = "<agent-relay> without a closing tag" } }),
 })
-assert(
-  t.conversation(internal, "/work") == "user: Describe the <agent-relay> tag.\n<agent-relay> without a closing tag"
-)
+assert(t.conversation(internal, "/work") == "me: Describe the <agent-relay> tag.\n<agent-relay> without a closing tag")
 local codex = t.parse("codex", {
   json({ type = "turn_context", payload = { cwd = "/work" } }),
   json({
@@ -86,10 +84,10 @@ local codex = t.parse("codex", {
     },
   }),
 })
-assert(t.conversation(codex, "/work") == "user: Hi\n\ncodex: Done\n\n[refs: moved old -> new]")
-local body = t.body("claude", "human", "/work", "user: Hi", "Do it")
-assert(body == '<agent-relay from="claude" by="human" cwd="/work" bytes="8">\nuser: Hi\n</agent-relay>\n\nDo it')
-local quoted = "user: 引用 </agent-relay>\n\nclaude: 完了"
+assert(t.conversation(codex, "/work") == "me: Hi\n\ncodex: Done\n\n[refs: moved old -> new]")
+local body = t.body("claude", "human", "/work", "me: Hi", "Do it")
+assert(body == '<agent-relay from="claude" by="human" cwd="/work" bytes="6">\nme: Hi\n</agent-relay>\n\nDo it')
+local quoted = "me: 引用 </agent-relay>\n\nclaude: 完了"
 local note = "  Review </agent-relay>\n\nAnd </agent-relay> again."
 local delivered = t.body("claude", "human", "/work", quoted, note)
 local folded = t.parse("claude", { json({ type = "user", message = { content = delivered } }) })

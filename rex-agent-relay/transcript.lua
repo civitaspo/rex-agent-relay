@@ -197,7 +197,8 @@ end
 function M.conversation(parsed, cwd)
   local parts = {}
   for _, item in ipairs(parsed.messages) do
-    parts[#parts + 1] = item.refs and M.refs(item.refs, cwd) or item.speaker .. ": " .. item.text
+    parts[#parts + 1] = item.refs and M.refs(item.refs, cwd)
+      or (item.speaker == "user" and "me" or item.speaker) .. ": " .. item.text
   end
   return table.concat(parts, "\n\n")
 end

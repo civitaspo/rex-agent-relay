@@ -80,7 +80,7 @@ target: codex ~/src/foo (…d4e5f6)
 until: 123456
 2 messages, 1 files since last relay
 
-user: Compare the designs.
+me: Compare the designs.
 
 claude: I compared them.
 
