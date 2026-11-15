@@ -53,7 +53,7 @@ io.read = function() return "Review\n" end
 local ok, result = pcall(dofile, "rex-agent-relay/relay.lua")
 os.exit, io.read = original_exit, original_read
 assert(not ok and type(result) == "table" and result.exit == 0)
-assert(#sent == 2 and sent[1]:find("user: seen", 1, true) and not sent[1]:find("user: later", 1, true))
+assert(#sent == 2 and sent[1]:find("me: seen", 1, true) and not sent[1]:find("me: later", 1, true))
 assert(sent[1]:find('by="auto"', 1, true) and sent[1]:find("\n\nReview", 1, true) and sent[2] == "\r")
 local f = assert(io.open(base .. "/cursors.json"))
 local cursors = rex.json.decode(f:read("*a"))
@@ -232,7 +232,7 @@ local located, locate_result = pcall(dofile, "rex-agent-relay/relay.lua")
 os.exit, rex.exec, print = original_exit, original_exec, original_print
 assert(not located and type(locate_result) == "table" and locate_result.exit == 0)
 assert(searched[2] == base .. "/projects" and searched[#searched] == "moved.jsonl")
-assert(table.concat(printed, "\n"):find("user: resumed elsewhere", 1, true))
+assert(table.concat(printed, "\n"):find("me: resumed elsewhere", 1, true))
 os.remove(moved)
 for _, case in ipairs({
   { find = { ok = true, stdout = "", stderr = "" }, exit = 2 },

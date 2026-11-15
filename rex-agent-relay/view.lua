@@ -84,7 +84,7 @@ function M.render(model, cols, rows)
   local conversation_start = #lines + 1
   add(model.conversation and model.conversation ~= "" and model.conversation or "No new conversation since last relay")
   for i = conversation_start, #lines do
-    for _, speaker in ipairs({ "user", "claude", "codex", "user (relayed note)", "agent (relayed note)" }) do
+    for _, speaker in ipairs({ "me", "claude", "codex", "user (relayed note)", "agent (relayed note)" }) do
       local prefix = speaker .. ":"
       if lines[i]:sub(1, #prefix) == prefix then
         lines[i] = "\27[36m" .. prefix .. "\27[0m" .. lines[i]:sub(#prefix + 1)
