@@ -1,25 +1,46 @@
 {
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
-  extends: ['config:best-practices', ':semanticCommits'],
-  dependencyDashboard: false,
-  labels: ['dependencies'],
+  extends: [
+    'config:best-practices',
+    ':semanticCommits',
+  ],
+  dependencyDashboard: {
+    enabled: false,
+  },
+  labels: [
+    'dependencies',
+  ],
   timezone: 'Asia/Tokyo',
   automergeStrategy: 'squash',
   automergeType: 'pr-comment',
   automergeComment: '/merge',
   platformAutomerge: false,
-  lockFileMaintenance: { enabled: true, automerge: true },
+  lockFileMaintenance: {
+    enabled: true,
+    automerge: true,
+  },
   packageRules: [
     {
       description: 'Automerge non-major updates',
-      matchUpdateTypes: ['minor', 'patch', 'pin', 'pinDigest', 'digest'],
+      matchUpdateTypes: [
+        'minor',
+        'patch',
+        'pin',
+        'pinDigest',
+        'digest',
+      ],
       automerge: true,
     },
     {
       description: 'Do not automerge major updates',
-      matchUpdateTypes: ['major'],
+      matchUpdateTypes: [
+        'major',
+      ],
       automerge: false,
-      labels: ['dependencies', 'major'],
+      labels: [
+        'dependencies',
+        'major',
+      ],
     },
   ],
 }
