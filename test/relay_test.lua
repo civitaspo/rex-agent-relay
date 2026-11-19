@@ -186,7 +186,13 @@ local function rejected_source(process, expected)
   assert(output:find(expected, 1, true), "expected " .. expected .. "; got " .. output)
 end
 rejected_source({ name = "claude", pid = 999 }, "configure its SessionStart hook")
-rejected_source({ name = "codex", pid = 101 }, "codex --no-daemon")
+register(source, "codex")
+rejected_source(
+  { name = "codex", pid = 999 },
+  "Send the first prompt in Codex, then retry. If Codex is using the shared daemon, "
+    .. "restart with codex --no-daemon or codex resume --no-daemon."
+)
+register(source, "claude")
 rejected_source({ name = "zsh", pid = 999 }, "source pane is not running Claude Code or Codex")
 rejected_source(nil, "source pane is not running Claude Code or Codex")
 local original_exec = rex.exec

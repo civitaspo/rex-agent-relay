@@ -133,7 +133,8 @@ local function source_agent(all)
   if not registered or registered.agent ~= current.agent or registered.pid ~= current.pid then
     if current.agent == "codex" then
       error(
-        "source registration does not match the running Codex; start Codex with codex --no-daemon so its SessionStart hook can register this pane",
+        "source registration does not match the running Codex. Send the first prompt in Codex, then retry. "
+          .. "If Codex is using the shared daemon, restart with codex --no-daemon or codex resume --no-daemon.",
         0
       )
     end
