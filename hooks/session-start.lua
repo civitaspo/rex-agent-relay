@@ -14,6 +14,13 @@ function M.run(agent, pid, block_id, payload, state_home)
     if not nonempty(payload[key]) then error("SessionStart payload is missing " .. key, 0) end
   end
 
+  local session_id = os.getenv("REX_SESSION")
+  if not nonempty(session_id) then error("REX_SESSION is required", 0) end
+  local terminal, err =
+    rex.call("com.superlogical.terminal.process", { session_id = session_id, block_id = block_id, args = {} })
+  if not terminal then error(tostring(err), 0) end
+  if not terminal.foreground or terminal.foreground.pid ~= process_id then return end
+
   state_home = state_home or os.getenv("XDG_STATE_HOME") or (assert(os.getenv("HOME")) .. "/.local/state")
   local dir = state_home .. "/rex-agent-relay/agents"
   local made, mkdir_err = rex.exec({ "mkdir", "-p", dir })

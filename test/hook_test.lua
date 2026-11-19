@@ -20,13 +20,26 @@ else
     error("unexpected command: " .. argv[1])
   end
 end
+local foreground_pid = 123
 rex = {
   args = nil,
   json = json,
   exec = exec,
+  call = function(method, args)
+    assert(method == "com.superlogical.terminal.process")
+    assert(args.session_id == "session:hook-test")
+    assert(args.block_id == "block:test-123" or args.block_id == "block:cli-789")
+    return { foreground = { pid = args.block_id == "block:cli-789" and 789 or foreground_pid } }
+  end,
 }
 
 local root = assert(os.getenv("XDG_STATE_HOME"))
+local getenv, read = os.getenv, io.read
+os.getenv = function(name)
+  if name == "REX_SESSION" then return "session:hook-test" end
+  if name == "REX_BLOCK" then return "block:cli-789" end
+  return getenv(name)
+end
 local M = dofile("hooks/session-start.lua")
 local payload = { transcript_path = "/tmp/transcript.jsonl", cwd = "/tmp/project", session_id = "session-123" }
 M.run("claude", "123", "block:test-123", payload, root)
@@ -40,13 +53,15 @@ assert(
     and record.cwd == payload.cwd
     and record.session_id == payload.session_id
 )
-M.run(
-  "codex",
-  456,
-  "block:test-123",
-  { transcript_path = "/tmp/next.jsonl", cwd = "/tmp/next", session_id = "session-456" },
-  root
-)
+local next_payload = { transcript_path = "/tmp/next.jsonl", cwd = "/tmp/next", session_id = "session-456" }
+M.run("codex", 456, "block:test-123", next_payload, root)
+file = assert(io.open(path, "rb"))
+record = json.decode(file:read("*a"))
+file:close()
+assert(record.agent == "claude" and record.pid == 123 and record.session_id == payload.session_id)
+
+foreground_pid = 456
+M.run("codex", 456, "block:test-123", next_payload, root)
 file = assert(io.open(path, "rb"))
 record = json.decode(file:read("*a"))
 file:close()
@@ -65,12 +80,6 @@ file = assert(io.open(path, "rb"))
 record = json.decode(file:read("*a"))
 file:close()
 assert(record.agent == "codex" and record.pid == 456)
-local getenv, read = os.getenv, io.read
-os.getenv = function(name)
-  if name == "REX_BLOCK" then return "block:cli-789" end
-  if name == "XDG_STATE_HOME" then return root end
-  return getenv(name)
-end
 rex.args = {}
 io.read = function() return "{}" end
 assert(not pcall(dofile, "hooks/session-start.lua"))
