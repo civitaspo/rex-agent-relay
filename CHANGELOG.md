@@ -2,6 +2,23 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.1.2] - 2026-11-19
+
+### 🐛 Bug Fixes
+
+- fix: protect foreground relay registration ([#61](https://github.com/civitaspo/rex-agent-relay/pull/61))
+
+### ⚙️ Maintenance
+
+- chore(deps): update civitaspo/csm-ci-actions action to v0.9.0 ([#52](https://github.com/civitaspo/rex-agent-relay/pull/52))
+- chore(repo-settings): sync managed files ([#44](https://github.com/civitaspo/rex-agent-relay/pull/44))
+- chore(deps): update jdx/mise-action action to v5.2.9 ([#54](https://github.com/civitaspo/rex-agent-relay/pull/54))
+- chore(deps): update dependency aqua:ast-grep/ast-grep to v0.51.3 ([#55](https://github.com/civitaspo/rex-agent-relay/pull/55))
+- chore(deps): update dependency jdx/mise to v2026.11.9 ([#56](https://github.com/civitaspo/rex-agent-relay/pull/56))
+- chore(deps): update dependency jdx/mise to v2026.11.10 ([#58](https://github.com/civitaspo/rex-agent-relay/pull/58))
+- chore(deps): update jdx/mise-action action to v5.2.10 ([#59](https://github.com/civitaspo/rex-agent-relay/pull/59))
+- chore(deps): update dependency github:github/gh-actions-lock to v0.5.0 ([#60](https://github.com/civitaspo/rex-agent-relay/pull/60))
+
 ## [1.1.1] - 2026-11-15
 
 ### 🐛 Bug Fixes
