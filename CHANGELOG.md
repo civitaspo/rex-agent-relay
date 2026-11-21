@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.1.3] - 2026-11-21
+
+### ⚙️ Maintenance
+
+- chore(deps): update dependency github:github/gh-actions-lock to v0.5.1 ([#62](https://github.com/civitaspo/rex-agent-relay/pull/62))
+- chore(deps): update dependency jdx/mise to v2026.11.11 ([#64](https://github.com/civitaspo/rex-agent-relay/pull/64))
+- chore(deps): update amannn/action-semantic-pull-request action to v6.1.3 ([#65](https://github.com/civitaspo/rex-agent-relay/pull/65))
+
 ## [1.1.2] - 2026-11-19
 
 ### 🐛 Bug Fixes
