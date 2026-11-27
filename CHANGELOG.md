@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.1.3] - 2026-11-27
+
+### ⚙️ Maintenance
+
+- chore(deps): update dependency github:github/gh-actions-lock to v0.5.1 ([#62](https://github.com/civitaspo/rex-agent-relay/pull/62))
+- chore(deps): update dependency jdx/mise to v2026.11.11 ([#64](https://github.com/civitaspo/rex-agent-relay/pull/64))
+- chore(deps): update amannn/action-semantic-pull-request action to v6.1.3 ([#65](https://github.com/civitaspo/rex-agent-relay/pull/65))
+- chore(deps): update dependency jdx/mise to v2026.11.12 ([#66](https://github.com/civitaspo/rex-agent-relay/pull/66))
+- chore(deps): update jdx/mise-action action to v5.3.0 ([#67](https://github.com/civitaspo/rex-agent-relay/pull/67))
+- chore(deps): update civitaspo/csm-ci-actions action to v0.10.0 ([#68](https://github.com/civitaspo/rex-agent-relay/pull/68))
+- chore(deps): update amannn/action-semantic-pull-request action to v6.1.4 ([#70](https://github.com/civitaspo/rex-agent-relay/pull/70))
+- chore(deps): update dependency jdx/mise to v2026.11.14 ([#69](https://github.com/civitaspo/rex-agent-relay/pull/69))
+- chore(deps): update civitaspo/csm-ci-actions action to v0.11.0 ([#71](https://github.com/civitaspo/rex-agent-relay/pull/71))
+- chore(repo-settings): sync managed files ([#72](https://github.com/civitaspo/rex-agent-relay/pull/72))
+
 ## [1.1.2] - 2026-11-19
 
 ### 🐛 Bug Fixes
